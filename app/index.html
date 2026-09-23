@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AreaTherm — Passive Shelter Thermal Design Platform</title>
+<script>
+  // Applied before first paint so a saved dark-mode preference doesn't
+  // flash light for a frame. Reads localStorage directly — store.js
+  // hasn't loaded yet at this point in <head>.
+  (function () {
+    try {
+      var raw = localStorage.getItem("areatherm_state_v2") || localStorage.getItem("areatherm_state_v1");
+      var theme = raw ? (JSON.parse(raw).theme || "LIGHT") : "LIGHT";
+      document.documentElement.setAttribute("data-theme", theme === "DARK" ? "dark" : "light");
+    } catch (e) { /* default light */ }
+  })();
+</script>
+<link rel="stylesheet" href="css/styles.css" />
+<!-- Leaflet: the one external UI library in this app, used only for the
+     optional map location picker on the Location & Climate page. Pinned
+     version, official CDN. Map tiles come from OpenStreetMap. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Three.js: ES modules via import map, no bundler — the same zero-build-
+     step approach as the rest of this app. Used only by js/shelter3d.js,
+     for the optional 3D preview on the Shelter Designer page. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="js/shelter3d.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">AT</div>
+        <div>
+          <div class="brand-name" id="brandName">AreaTherm</div>
+          <div class="brand-sub">Passive Shelter Design</div>
+        </div>
+        <button id="sidebarClose" class="sidebar-close" aria-label="Close menu">✕</button>
+      </div>
+      <nav class="nav" id="mainNav">
+        <div class="nav-group-label">Overview</div>
+        <a href="#/dashboard" data-route="dashboard"><span class="nav-icon">🏠</span>Dashboard</a>
+        <a href="#/guided" data-route="guided"><span class="nav-icon">🧭</span>Guided Setup</a>
+        <div class="nav-group-label">Design</div>
+        <a href="#/location" data-route="location" class="nav-advanced-only"><span class="nav-icon">🌐</span>Location &amp; Climate</a>
+        <a href="#/designer" data-route="designer" class="nav-advanced-only"><span class="nav-icon">📐</span>Shelter Designer</a>
+        <a href="#/materials" data-route="materials"><span class="nav-icon">🧱</span>Materials</a>
+        <div class="nav-group-label">Analysis</div>
+        <a href="#/simulation" data-route="simulation" class="nav-advanced-only"><span class="nav-icon">🌡️</span>Thermal Simulation</a>
+        <a href="#/optimization" data-route="optimization" class="nav-advanced-only"><span class="nav-icon">📊</span>Optimization</a>
+        <a href="#/whatif" data-route="whatif"><span class="nav-icon">🔀</span>What-If Analysis</a>
+        <a href="#/validation" data-route="validation" class="nav-advanced-only"><span class="nav-icon">✅</span>Validation</a>
+        <div class="nav-group-label">Output</div>
+        <a href="#/reports" data-route="reports"><span class="nav-icon">📄</span>Reports</a>
+        <a href="#/evaluator" data-route="evaluator" class="nav-advanced-only"><span class="nav-icon">🗒️</span>Evaluator Summary</a>
+        <div class="nav-divider"></div>
+        <a href="#/settings" data-route="settings"><span class="nav-icon">⚙️</span>Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="mode-toggle">
+          <button id="modeSimple" class="mode-btn active">Simple</button>
+          <button id="modeAdvanced" class="mode-btn">Advanced</button>
+        </div>
+        <div class="version-tag">thermal-engine v1.1.0</div>
+      </div>
+    </aside>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+    <main class="content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="menuToggle" class="menu-toggle" aria-label="Open menu">☰</button>
+          <div class="topbar-project">
+            <span class="topbar-label">Project</span>
+            <span class="topbar-value" id="projectName">Untitled Project</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span id="offlineBadge" class="data-badge illustrative" hidden>⚠ Offline — running from cache, live data unavailable</span>
+          <button id="runLiveDemoBtn" class="btn btn-accent">▶ Run Live Demo</button>
+        </div>
+      </header>
+      <div class="view" id="viewRoot"><!-- rendered by app.js --></div>
+    </main>
+  </div>
+
+  <div id="explainModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="explainTitle">Explain Calculation</h3>
+        <button id="explainClose" class="modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="explainBody"></div>
+    </div>
+  </div>
+
+  <script src="js/util.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/idb.js"></script>
+  <script src="js/reliability.js"></script>
+  <script src="js/weather-api.js"></script>
+  <script src="js/nasa-power.js"></script>
+  <script src="js/elevation.js"></script>
+  <!-- ML surrogate: trained OFFLINE (tools/train-ml-surrogate.js) on this
+       app's own physics engine output, never field data or a live fetch.
+       ml-model-data.js is a plain static data file (trained weights), same
+       loading convention as data.js/config.js — no CDN, no network call.
+       Used only to pre-screen a broad candidate pool before Optimization's
+       "Broader search"; every displayed result is still verified by a real
+       ENGINE.runSimulation() call. See ml-surrogate.js and Settings. -->
+  <script src="js/ml-model-data.js"></script>
+  <script src="js/ml-surrogate.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/validator.js"></script>
+  <script src="js/ui-1.js"></script>
+  <script src="js/ui-2.js"></script>
+  <script src="js/ui-3.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

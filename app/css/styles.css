@@ -1,0 +1,524 @@
+:root{
+  /* Sidebar/hero stay charcoal-anchored in BOTH themes — an intentional,
+     pre-existing AreaTherm choice (dark identity persists across the theme
+     toggle), now retinted from navy-blue to the new charcoal family instead
+     of switching to a theme-reactive sidebar. */
+  --navy-900:#0F1215; --navy-800:#14181C; --navy-700:#191E23;
+  /* Primary palette — "instrument panel" identity: a restrained cyan accent,
+     mostly-neutral surfaces, semantic color reserved for meaning (design-
+     system overhaul pass — see plan). */
+  --accent:#13AFC0; --accent-hover:#0C93A3; --accent-bright:#0C93A3; --accent-light:#8BE8EE;
+  --bg:#F4F7F8; --panel:#ffffff; --border:#DCE5E7; --border-strong:#C7D4D7;
+  --surface-elevated:#F9FBFB; --surface-hover:#EEF4F5;
+  --text:#172126; --text-muted:#52636A; --text-faint:#7B8A90;
+  --good:#218A62; --warn:#A96F00; --bad:#C24850; --thermal:#D97732; --neutral:#7B8A90;
+  --input-bg:#ffffff; --tooltip-bg:#172126;
+  /* Chart-only temperature-zone colors — distinct from the --good/--warn/--bad
+     general UI-state semantics above (e.g. --warn is caution-orange, but the
+     "warm" temperature zone is a separate amber per the thermal-domain scale). */
+  --temp-cold:#13AFC0; --temp-comfortable:#218A62; --temp-warm:#D97732; --temp-hot:#C24850;
+  --tag-demo-bg:#fff3e0; --tag-demo-fg:#e65100;
+  --tag-model-bg:#E1F5F7; --tag-model-fg:#0C7A87;
+  --tag-input-bg:#e8f5e9; --tag-input-fg:#1b5e20;
+  --tag-field-bg:#f3e5f5; --tag-field-fg:#4a148c;
+  --tag-ml-bg:#e3e8fd; --tag-ml-fg:#2b3a8f;
+  --row-highlight:#e8f5e9; --th-bg:#F9FBFB;
+  --chart-grid:#eeeeee; --chart-axis:#bdbdbd; --comfort-band:#e8f5e9;
+  --recommend-bg:#e8f5e9;
+  --workflow-old-bg:#ffebee; --workflow-old-border:#ffcdd2;
+  --workflow-new-bg:#e8f5e9; --workflow-new-border:#c8e6c9;
+  --modal-bg:#ffffff; --pre-bg:#F4F7F8;
+  --active-tint:#E1F5F7;
+  --data-real-bg:#e8f5e9; --data-real-fg:#2e7d32; --data-real-border:#c8e6c9;
+  --data-illus-bg:#fff3e0; --data-illus-fg:#e65100; --data-illus-border:#ffe0b2;
+  --error-bg:#ffebee; --error-border:#ffcdd2;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Roboto, Arial, sans-serif;
+  /* Spacing scale — applied to macro layout spacing (page/card/grid gaps),
+     not forced onto every micro-component padding. */
+  --spacing-xs:4px; --spacing-sm:8px; --spacing-md:16px; --spacing-lg:24px; --spacing-xl:32px;
+  /* Type scale — a UI-sans modular scale (the same family Inter/Geist Sans
+     sit in; see the --sans stack). --text-display is for the rare large
+     standalone number (hero/report headline); everything else maps to an
+     existing use. */
+  --text-display:32px; --text-heading:24px; --text-subheading:18px; --text-body:14px; --text-sm:13px; --text-label:11px; --line-height:1.5;
+  /* Tracking (letter-spacing) — the two ends of the scale need opposite
+     correction: large text (24px+) sits too loose at a UI sans's default
+     spacing, small uppercase text sits too tight. Body text (13-15px)
+     needs neither and stays at the type-family default (0). */
+  --tracking-tight:-0.02em; --tracking-wide:.04em;
+  /* Elevation — subtle in light mode, near-flat in dark (dark mode relies on
+     tonal surface steps for depth, not shadow — see --surface-elevated). */
+  --shadow-sm:0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
+  --shadow-md:0 2px 8px rgba(0,0,0,.15);
+  --radius-card:12px; --radius-btn:8px;
+}
+/* Dark mode: toggled via Settings -> Appearance (sets documentElement's
+   data-theme attribute). Only the light-chrome variables flip — the sidebar
+   is already dark charcoal in both modes by design (AreaTherm's identity
+   anchor persists across the toggle, per the design brief: "dark mode is
+   the primary AreaTherm identity"). Deep charcoal, not pure black — retains
+   tonal surface steps (bg -> panel -> surface-elevated -> surface-hover) so
+   depth reads through layering rather than shadow, which barely shows
+   against a near-black background anyway. */
+:root[data-theme="dark"]{
+  --accent:#13AFC0; --accent-hover:#5AD0DC; --accent-bright:#5AD0DC; --accent-light:#8BE8EE;
+  --bg:#0B0D0F; --panel:#14181C; --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
+  --surface-elevated:#191E23; --surface-hover:#20262C;
+  --text:#F2F5F7; --text-muted:#A3ADB5; --text-faint:#6F7A83;
+  --good:#3FBE93; --warn:#D9A441; --bad:#E58A90; --thermal:#E8A165; --neutral:#8A98A1;
+  --input-bg:#111519; --tooltip-bg:#242B31;
+  --temp-cold:#5AD0DC; --temp-comfortable:#3FBE93; --temp-warm:#E8A165; --temp-hot:#E58A90;
+  --tag-demo-bg:#4a2f0a; --tag-demo-fg:#ffcc80;
+  --tag-model-bg:#0d2f33; --tag-model-fg:#5AD0DC;
+  --tag-input-bg:#0d3311; --tag-input-fg:#a5d6a7;
+  --tag-field-bg:#2e0f42; --tag-field-fg:#ce93d8;
+  --tag-ml-bg:#242a5c; --tag-ml-fg:#a8b6f5;
+  --row-highlight:#0d3311; --th-bg:#191E23;
+  --chart-grid:#252c33; --chart-axis:#4a5760; --comfort-band:#1b3d1e;
+  --recommend-bg:#0d2410;
+  --workflow-old-bg:#3a1414; --workflow-old-border:#5c2424;
+  --workflow-new-bg:#0d2410; --workflow-new-border:#1f4a22;
+  --modal-bg:#191E23; --pre-bg:#0B0D0F;
+  --active-tint:#0d2f33;
+  --data-real-bg:#0d2410; --data-real-fg:#81c784; --data-real-border:#1f4a22;
+  --data-illus-bg:#4a2f0a; --data-illus-fg:#ffb74d; --data-illus-border:#5c3d14;
+  --error-bg:#3a1414; --error-border:#5c2424;
+}
+*{box-sizing:border-box;}
+/* Visible keyboard-focus state — the browser default outline doesn't suit
+   the dark theme and wasn't consistent across components. :focus-visible
+   only (not plain :focus) so a mouse click doesn't show a ring a keyboard
+   Tab-press would. */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, [tabindex]:focus-visible{
+  outline:2px solid var(--accent); outline-offset:2px; border-radius:2px;
+}
+html,body{margin:0;padding:0;height:100%;}
+body{font-family:var(--sans); background:var(--bg); color:var(--text); font-size:14px;}
+/* Theme-toggle crossfade — scoped to the containers that actually carry
+   theme colors, not a blanket `*` selector (which would also slow down
+   unrelated hover/focus micro-interactions elsewhere). */
+body, .card, .metric-card, .sidebar, .topbar, .modal, input, select, textarea, .nav-tile, .wizard-step, .preset-btn{
+  transition:background-color .2s ease, border-color .2s ease, color .2s ease;
+}
+a{color:inherit; text-decoration:none;}
+button{font-family:inherit; cursor:pointer;}
+
+.app-shell{min-height:100vh;}
+
+/* Sidebar */
+.sidebar{
+  width:230px; background:linear-gradient(180deg,var(--navy-900),var(--navy-800));
+  color:#dce8f0; display:flex; flex-direction:column; flex-shrink:0; padding:18px 0;
+  position:fixed; top:0; left:0; height:100vh; z-index:10;
+  transition:transform .2s ease;
+}
+.brand{display:flex; align-items:center; gap:10px; padding:0 18px 18px; border-bottom:1px solid rgba(255,255,255,.08); position:relative;}
+.sidebar-close{display:none; position:absolute; right:14px; top:-2px; background:none; border:none; color:#b9cad8; font-size:18px; padding:4px;}
+.brand-mark{width:34px; height:34px; border-radius:8px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;}
+.brand-name{font-weight:700; font-size:15px; color:#fff;}
+.brand-sub{font-size:10.5px; color:#8ea9bc; letter-spacing:var(--tracking-wide);}
+.nav{display:flex; flex-direction:column; padding:14px 10px; gap:2px; flex:1; overflow-y:auto;}
+/* Nav section labels — group the workflow's own stages (Overview/Design/
+   Analysis/Output) instead of one flat 11-item list. Same small-uppercase
+   tracking already used for every other micro-label in this app. */
+.nav-group-label{
+  font-size:10px; text-transform:uppercase; letter-spacing:var(--tracking-wide);
+  color:#63798c; padding:14px 12px 4px; font-weight:600;
+}
+.nav-group-label:first-child{padding-top:2px;}
+.nav-divider{height:1px; background:rgba(255,255,255,.08); margin:8px 12px;}
+.nav a{display:flex; align-items:center; gap:9px; padding:9px 12px; border-radius:8px; font-size:13px; color:#b9cad8; transition:background .12s;}
+.nav-icon{font-size:14px; line-height:1; flex-shrink:0; width:16px; text-align:center;}
+.nav a:hover{background:rgba(255,255,255,.06); color:#fff;}
+.nav a.active{background:var(--accent); color:#fff; font-weight:600;}
+.nav a.nav-advanced-only{display:none;}
+body.mode-advanced .nav a.nav-advanced-only{display:block;}
+.sidebar-footer{padding:14px 18px 0; border-top:1px solid rgba(255,255,255,.08); margin-top:8px;}
+.mode-toggle{display:flex; background:rgba(255,255,255,.08); border-radius:8px; padding:2px; margin-bottom:10px;}
+.mode-btn{flex:1; background:transparent; border:none; color:#b9cad8; font-size:11.5px; padding:6px 0; border-radius:6px;}
+.mode-btn.active{background:var(--accent); color:#fff;}
+.version-tag{font-family:var(--mono); font-size:10px; color:#63798c;}
+
+/* Main content */
+.content{margin-left:230px; min-width:0; display:flex; flex-direction:column; min-height:100vh; transition:margin-left .2s ease;}
+.topbar{display:flex; align-items:center; justify-content:space-between; padding:12px 24px; background:var(--panel); border-bottom:1px solid var(--border); gap:12px; position:sticky; top:0; z-index:20;}
+.topbar-left{display:flex; align-items:center; gap:10px; min-width:0;}
+/* Always visible (not just <=860px) — on desktop it collapses the sidebar
+   in place for more content width, via .app-shell.sidebar-collapsed below;
+   on mobile it opens/closes the off-canvas drawer, via .sidebar.open. */
+.menu-toggle{display:inline-flex; align-items:center; justify-content:center; background:none; border:none; font-size:20px; line-height:1; color:var(--text); padding:4px 6px; border-radius:8px; flex-shrink:0;}
+.menu-toggle:hover{background:var(--bg);}
+/* Desktop sidebar collapse — a separate, opposite-polarity toggle from the
+   mobile drawer below (this one starts open and collapses; that one starts
+   closed and opens), so both live on the same button without JS needing to
+   know the viewport width: only the media query that matches has any
+   effect, so toggling both classes together on every click is safe. */
+@media (min-width:769px){
+  .app-shell.sidebar-collapsed .sidebar{transform:translateX(-100%);}
+  .app-shell.sidebar-collapsed .content{margin-left:0;}
+}
+.sidebar-backdrop{display:none; position:fixed; inset:0; background:rgba(8,14,20,.5); z-index:40;}
+.topbar-project{display:flex; flex-direction:column; min-width:0;}
+.topbar-label{font-size:10px; text-transform:uppercase; letter-spacing:var(--tracking-wide); color:var(--text-faint);}
+.topbar-value{font-weight:600; font-size:14px; font-variant-numeric:tabular-nums;}
+.btn{border:1px solid var(--border); background:var(--panel); padding:8px 14px; border-radius:var(--radius-btn); font-size:12.5px; font-weight:600; color:var(--text);}
+.btn:hover{border-color:var(--accent); color:var(--accent);}
+.btn-accent{background:var(--accent); color:#fff; border-color:var(--accent);}
+.btn-accent:hover{background:var(--accent-bright); color:#fff;}
+.btn-sm{padding:5px 10px; font-size:11.5px;}
+@media (prefers-reduced-motion: no-preference){ .btn:active{transform:translateY(1px);} }
+.btn-accent:active{background:var(--accent-hover);}
+.btn:disabled, .btn:disabled:hover{opacity:.5; cursor:not-allowed; border-color:var(--border); color:var(--text-faint); background:var(--panel); transform:none;}
+.btn-accent:disabled, .btn-accent:disabled:hover{background:var(--border); color:var(--text-faint); border-color:var(--border);}
+
+/* Inline loading spinner for an in-flight async button — rides the same
+   btn.disabled toggle every async action already sets; JS only needs to
+   add/remove this class alongside it, no new state. */
+.btn.is-loading{color:transparent; pointer-events:none; position:relative;}
+.btn.is-loading::after{
+  content:""; position:absolute; inset:0; margin:auto; width:14px; height:14px;
+  border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%;
+}
+@media (prefers-reduced-motion: no-preference){ .btn.is-loading::after{animation:areatherm-spin .6s linear infinite;} }
+@keyframes areatherm-spin{ to{transform:rotate(360deg);} }
+
+.view{padding:22px 26px 60px; max-width:1320px;}
+@media (min-width:769px){ .card{padding:var(--spacing-lg);} }
+
+/* Restrained page/card entrance — every route render replaces .view's
+   innerHTML from scratch already, so this replays naturally on every
+   navigation with zero JS. One-shot (animation, not a looping/repeating
+   effect); disabled entirely under reduced-motion below. */
+@media (prefers-reduced-motion: no-preference){
+  .view{animation:areatherm-enter .22s ease-out both;}
+  .view > .card, .view > .grid > .card, .view > .grid > .metric-card, .view .hero{
+    animation:areatherm-enter .22s ease-out both;
+  }
+  .view > .card:nth-of-type(2), .view > .grid > .card:nth-of-type(2), .view > .grid > .metric-card:nth-of-type(2){ animation-delay:.03s; }
+  .view > .card:nth-of-type(3), .view > .grid > .card:nth-of-type(3), .view > .grid > .metric-card:nth-of-type(3){ animation-delay:.06s; }
+  .view > .card:nth-of-type(4), .view > .grid > .card:nth-of-type(4), .view > .grid > .metric-card:nth-of-type(4){ animation-delay:.09s; }
+}
+@keyframes areatherm-enter{
+  from{ opacity:0; transform:translateY(6px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+
+/* Typography helpers — weight hierarchy: 700 for true headings and the
+   numbers that ARE the point of a card (metric values, big scores); 600 for
+   interactive/selected chrome (buttons, active nav, labels) and small
+   emphasis (recommend-item values, nav-tile titles); 400 everywhere else.
+   "Light" text is never a lighter font-weight here (thin strokes hurt
+   legibility at 11-14px, which is most of this UI) — secondary/tertiary
+   text gets there via --text-muted/--text-faint color instead, at the same
+   weight as its surrounding text. There is no 300-weight rule anywhere in
+   this file; keep it that way. */
+h1{font-size:var(--text-heading); margin:0 0 4px; font-weight:700; letter-spacing:var(--tracking-tight);}
+h2{font-size:var(--text-subheading); margin:0 0 12px; font-weight:700;}
+h3{font-size:13.5px; margin:0 0 8px; text-transform:uppercase; letter-spacing:var(--tracking-wide); color:var(--text-muted);}
+.subtitle{color:var(--text-muted); font-size:13px; margin-bottom:20px; line-height:var(--line-height);}
+
+/* Page header — icon + title + subtitle, used by every page except
+   Dashboard (which keeps its hero). The icon badge reuses .metric-icon's
+   circular, neutral-surface language at a slightly larger size, so a new
+   page reads as the same design system, not a new one. */
+.page-header{display:flex; align-items:flex-start; gap:14px; margin-bottom:var(--spacing-lg);}
+.page-header-icon{
+  flex-shrink:0; width:44px; height:44px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; line-height:1;
+  background:var(--surface-elevated); border:1px solid var(--border);
+}
+.page-header-text{min-width:0; flex:1;}
+.page-header-text h1{margin-bottom:2px;}
+.page-header-text .subtitle{margin-bottom:0;}
+.page-header-actions{flex-shrink:0; display:flex; gap:8px; align-items:center; padding-top:2px;}
+@media (max-width:600px){ .page-header{gap:10px;} .page-header-icon{width:36px; height:36px; font-size:17px;} }
+
+/* In-page section-zone label — groups an information-dense page's cards
+   into labeled zones (e.g. Simulation's Prediction / Energy Balance /
+   Occupancy & Comfort) without changing what any card shows. */
+.section-label{
+  font-size:11px; text-transform:uppercase; letter-spacing:var(--tracking-wide);
+  font-weight:700; color:var(--text-faint);
+  margin:28px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--border);
+}
+/* Prose/body copy gets the spec's 1.5x readability line-height; compact UI
+   chrome (buttons, nav, tables, tags) keeps its existing tighter spacing —
+   applying 1.5 globally would visibly inflate the height of every single-line
+   badge/button/table-row across the app. */
+p, .hint, .modal-body, .assumption-list li{line-height:var(--line-height);}
+.tag{display:inline-block; font-size:10.5px; text-transform:uppercase; letter-spacing:var(--tracking-wide); padding:2px 8px; border-radius:999px; font-weight:700;}
+.tag-demo{background:var(--tag-demo-bg); color:var(--tag-demo-fg);}
+.tag-model{background:var(--tag-model-bg); color:var(--tag-model-fg);}
+.tag-input{background:var(--tag-input-bg); color:var(--tag-input-fg);}
+.tag-field{background:var(--tag-field-bg); color:var(--tag-field-fg);}
+.tag-ml{background:var(--tag-ml-bg); color:var(--tag-ml-fg);}
+
+/* Grid / cards */
+.grid{display:grid; gap:16px;}
+/* minmax(0,1fr), not a bare 1fr: a grid item's default min-width is "auto",
+   which lets a wide child (a <select>'s longest option, a long unbroken
+   string) hold its column open past 1fr and overflow the page horizontally.
+   minmax(0,...) lets the track actually shrink to the space available —
+   pure layout-safety, invisible whenever content already fits. */
+.grid-4{grid-template-columns:repeat(4,minmax(0,1fr));}
+.grid-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr));}
+@media (max-width:1024px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);}}
+
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px 18px; box-shadow:var(--shadow-sm);}
+.card-tight{padding:12px 14px;}
+/* Self-sufficient even without the .card class alongside it (both patterns
+   exist in the markup today) — a KPI tile always gets proper chrome. */
+.metric-card{position:relative; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px 18px; box-shadow:var(--shadow-sm);}
+.metric-card .metric-label{font-size:var(--text-label); color:var(--text-muted); text-transform:uppercase; letter-spacing:var(--tracking-wide); margin-bottom:6px;}
+.metric-card .metric-value{font-size:26px; font-weight:700; font-family:var(--mono); font-variant-numeric:tabular-nums;}
+.metric-card .metric-sub{font-size:11.5px; color:var(--text-faint); margin-top:4px;}
+
+/* Headline-KPI icon badge — Dashboard + Simulation's top summary cards only.
+   Deliberately ONE neutral treatment, not a color per metric: these are
+   routine data readouts, not statuses, and "keep KPI cards neutral / don't
+   give every card a different color" is a hard rule of the current design
+   system. The emoji glyph alone still distinguishes each metric. */
+.metric-icon{
+  position:absolute; top:14px; right:14px;
+  width:38px; height:38px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; line-height:1;
+  background:var(--surface-elevated); color:var(--text-muted);
+  border:1px solid var(--border);
+}
+.metric-icon-sun, .metric-icon-temp, .metric-icon-comfort, .metric-icon-heat{
+  background:var(--surface-elevated); color:var(--text-muted);
+}
+
+/* Thermal Comfort Score card's history trend + Recent Simulations list —
+   both read STORE.simulationHistory, already computed/stored, just given a
+   visual trend/hierarchy instead of plain text. */
+.sparkline-svg{width:100%; height:28px; display:block; margin-top:6px;}
+.sparkline-line{stroke:var(--accent); stroke-width:2; stroke-linecap:round; stroke-linejoin:round;}
+.kpi-link{display:inline-block; margin-top:4px; font-size:11.5px; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:var(--tracking-wide);}
+.kpi-link:hover{color:var(--accent-hover);}
+
+.history-row{display:flex; align-items:center; gap:12px;}
+.history-row-badge{
+  flex-shrink:0; width:34px; height:34px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11.5px; font-weight:700; font-variant-numeric:tabular-nums;
+  color:#fff;
+}
+.history-row-badge.good{background:var(--good);}
+.history-row-badge.warn{background:var(--warn);}
+.history-row-badge.bad{background:var(--bad);}
+.history-row-text{min-width:0; flex:1;}
+.history-row-title{font-size:12.5px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.history-row-sub{font-size:11.5px; color:var(--text-faint); margin-top:1px;}
+
+/* Status callouts (replace ad-hoc inline styles so dark mode can reach them) */
+.callout-warn{background:var(--tag-demo-bg); border-color:var(--data-illus-border);}
+.callout-warn h3{color:var(--tag-demo-fg); margin:0 0 6px; text-transform:none; letter-spacing:normal; font-size:14px;}
+.callout-error{border-color:var(--bad); background:var(--error-bg);}
+.callout-error h3{color:var(--bad); margin:0 0 6px; text-transform:none; letter-spacing:normal; font-size:14px;}
+
+/* Inline error text next to an async status line (Location page's fetch
+   status etc.) — an alternative to .callout-error for a one-line message
+   that doesn't warrant a full callout box. */
+.hint.status-error{color:var(--bad);}
+
+/* Shared empty-state — replaces a bare <p class="hint"> wherever a page has
+   nothing to show yet. Reuses .page-header-icon's circular-badge language
+   (larger, centered) so it reads as the same design system. */
+.empty-state{text-align:center; padding:28px 20px; color:var(--text-muted);}
+.empty-state-icon{
+  width:44px; height:44px; border-radius:50%; margin:0 auto 12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; line-height:1;
+  background:var(--surface-elevated); border:1px solid var(--border);
+}
+.empty-state p{margin:0; font-size:13px; line-height:var(--line-height);}
+.empty-state-cta{margin-top:10px;}
+
+/* Forms */
+.form-row{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
+.form-row label{font-size:11.5px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:var(--tracking-wide);}
+.form-row input, .form-row select, .form-row textarea{
+  width:100%; min-width:0; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius-card); font-size:13px; background:var(--input-bg); color:var(--text); font-family:inherit;
+}
+.form-row .hint{font-size:11px; color:var(--text-faint); font-weight:400; text-transform:none;}
+.form-inline{display:flex; gap:12px; flex-wrap:wrap;}
+.form-inline .form-row{flex:1; min-width:140px;}
+fieldset{border:1px solid var(--border); border-radius:var(--radius-card); padding:14px; margin:0 0 16px;}
+legend{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-wide); color:var(--accent); padding:0 6px;}
+
+/* Tables */
+table{width:100%; border-collapse:collapse; font-size:12.5px;}
+th,td{padding:8px 10px; border-bottom:1px solid var(--border); text-align:left;}
+th{font-size:10.5px; text-transform:uppercase; letter-spacing:var(--tracking-wide); color:var(--text-muted); background:var(--th-bg);}
+th.sortable{cursor:pointer; user-select:none;}
+th.sortable:hover{color:var(--accent);}
+tr.highlight-recommended{background:var(--row-highlight);}
+td.num{font-family:var(--mono); text-align:right; font-variant-numeric:tabular-nums;}
+.table-wrap{overflow-x:auto;}
+
+/* Charts */
+.chart-svg{width:100%; height:auto; display:block;}
+.chart-grid{stroke:var(--chart-grid); stroke-width:1;}
+.chart-axis{stroke:var(--chart-axis); stroke-width:1;}
+.chart-tick{font-size:9.5px; fill:var(--text-faint); font-family:var(--mono); font-variant-numeric:tabular-nums;}
+.chart-axis-label{font-size:10px; fill:var(--text-muted);}
+.chart-line{fill:none; stroke-width:2;}
+.chart-comfort-band{fill:var(--comfort-band); opacity:.6;}
+.chart-legend{display:flex; gap:14px; margin-top:8px; flex-wrap:wrap;}
+.chart-legend-item{font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px;}
+.chart-legend-item i{width:10px; height:10px; border-radius:2px; display:inline-block;}
+.chart-bar-pos{fill:var(--good);} .chart-bar-neg{fill:var(--bad);}
+.chart-ideal-line{stroke:var(--chart-axis); stroke-dasharray:4 3;}
+.chart-point{fill:var(--accent); opacity:.75;}
+
+.chart-crosshair{stroke:var(--text-faint); stroke-width:1; stroke-dasharray:3 3;}
+.chart-tooltip{position:absolute; top:14px; background:var(--tooltip-bg); color:#fff; font-size:11px; padding:8px 10px; border-radius:var(--radius-card); pointer-events:none; z-index:5; box-shadow:0 6px 18px rgba(0,0,0,.25); min-width:150px;}
+.chart-tooltip i{width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:5px;}
+.chart-tooltip b{display:block; margin-bottom:3px;}
+.chart-tooltip div{white-space:nowrap;}
+
+.gauge-svg{width:140px; height:140px;}
+.gauge-track{stroke:var(--chart-grid);}
+.gauge-score{font-size:30px; font-weight:800; font-family:var(--mono); fill:var(--text); font-variant-numeric:tabular-nums;}
+.gauge-max{font-size:11px; fill:var(--text-faint);}
+.gauge-sublabel{text-align:center; font-size:11px; color:var(--text-muted); margin-top:4px;}
+
+/* Score badges / checklist */
+.score-pill{display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-weight:700; font-variant-numeric:tabular-nums;}
+.checklist{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px;}
+.checklist li{font-size:13px;}
+.checklist li::before{content:"✓ "; color:var(--good); font-weight:700;}
+
+/* Recommended design panel */
+.recommend-panel{border:1.5px solid var(--good); background:var(--recommend-bg); border-radius:var(--radius-card); padding:18px 20px;}
+.recommend-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:10px;}
+.recommend-item .k{font-size:10.5px; text-transform:uppercase; color:var(--text-muted); letter-spacing:var(--tracking-wide);}
+.recommend-item .v{font-weight:700; font-size:14px; font-variant-numeric:tabular-nums;}
+
+/* Explain link */
+.explain-link{font-size:11px; color:var(--accent); font-weight:600; border:1px dashed var(--accent); border-radius:5px; padding:2px 8px; display:inline-block; margin-top:6px;}
+.explain-link:hover{background:var(--accent); color:#fff;}
+
+/* Modal */
+.modal-overlay{position:fixed; inset:0; background:rgba(10,20,30,.5); display:flex; align-items:center; justify-content:center; z-index:100;}
+.modal-overlay.hidden{display:none;}
+.modal{background:var(--modal-bg); border-radius:var(--radius-card); width:640px; max-width:92vw; max-height:82vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal-header{display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--border);}
+.modal-close{background:none; border:none; font-size:16px; color:var(--text-muted);}
+.modal-body{padding:16px 20px; overflow-y:auto; font-size:13px; line-height:1.6;}
+.modal-body pre{background:var(--pre-bg); padding:12px; border-radius:6px; font-family:var(--mono); font-size:12.5px; overflow-x:auto;}
+
+/* Landing hero */
+.hero{background:linear-gradient(135deg,var(--navy-900),var(--navy-700)); color:#fff; border-radius:14px; padding:36px 40px; margin-bottom:22px;}
+.hero h1{font-size:28px; color:#fff; margin-bottom:8px; letter-spacing:var(--tracking-tight);}
+.hero p{color:#c3d6e2; max-width:640px; font-size:14px; line-height:1.6;}
+.hero .flow{display:flex; align-items:center; gap:8px; margin-top:20px; flex-wrap:wrap; font-family:var(--mono); font-size:12px;}
+.hero .flow span.step{background:rgba(255,255,255,.1); padding:6px 12px; border-radius:6px; color:#e7f1f7;}
+.hero .flow span.arrow{color:#6f93aa;}
+.hero .cta-row{margin-top:22px; display:flex; gap:10px;}
+
+.workflow-compare{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:18px 0;}
+.workflow-col{border-radius:var(--radius-card); padding:16px 18px;}
+.workflow-col.old{background:var(--workflow-old-bg); border:1px solid var(--workflow-old-border);}
+.workflow-col.new{background:var(--workflow-new-bg); border:1px solid var(--workflow-new-border);}
+.workflow-col .step{padding:6px 0; font-size:12.5px; font-weight:600;}
+.workflow-col .arrow-down{text-align:center; color:var(--text-faint); font-size:12px;}
+
+.assumption-list{list-style:none; margin:0; padding:0;}
+.assumption-list li{padding:8px 0; border-bottom:1px dashed var(--border); font-size:13px;}
+.assumption-list li:last-child{border-bottom:none;}
+
+.badge-source{font-size:10.5px; padding:2px 7px; border-radius:5px; font-weight:700; text-transform:uppercase; letter-spacing:var(--tracking-wide);}
+
+/* Validation errors */
+.validation-errors{ background:var(--error-bg); border:1px solid var(--error-border); border-radius:var(--radius-card); padding:10px 14px; margin:10px 0; font-size:12.5px; color:var(--bad); }
+.validation-errors ul{ margin:4px 0 0; padding-left:18px; }
+.validation-errors li{ margin-bottom:2px; }
+[data-field-invalid]{ border-color:var(--bad) !important; box-shadow:0 0 0 2px rgba(211,47,47,.15); }
+
+/* Data source badges */
+.data-badge{display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:6px; margin:4px 0;}
+.data-badge[hidden]{display:none;} /* the display rule above otherwise beats the hidden attribute (same-origin author CSS always wins over the UA stylesheet's [hidden] rule) */
+.data-badge.real{background:var(--data-real-bg); color:var(--data-real-fg); border:1px solid var(--data-real-border);}
+.data-badge.illustrative{background:var(--data-illus-bg); color:var(--data-illus-fg); border:1px solid var(--data-illus-border);}
+
+/* Dashboard — explore-the-platform tiles. Always visible now (no more
+   click-to-reveal toggle — primary navigation shouldn't need discovering).
+   Two layouts share the same tile classes: a 3-up grid (unused today but
+   kept for any future full-width usage) and a stacked single-column list
+   (.nav-tile-row), currently used on the Dashboard where tiles sit in a
+   half-width column next to Recent Simulations. */
+.nav-tile{display:block; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px 18px; box-shadow:var(--shadow-sm); transition:border-color .15s, box-shadow .15s, transform .15s;}
+.nav-tile:hover{border-color:var(--accent); box-shadow:0 2px 10px rgba(19,175,192,.15); transform:translateY(-1px); background:var(--surface-hover);}
+@media (prefers-reduced-motion: no-preference){ .nav-tile:active{transform:translateY(0);} }
+.nav-tile-icon{font-size:20px; margin-bottom:8px;}
+.nav-tile-title{font-size:13.5px; font-weight:700; color:var(--text); margin-bottom:4px;}
+.nav-tile-desc{font-size:12px; color:var(--text-muted); line-height:1.45;}
+.explore-tile-list{display:flex; flex-direction:column; gap:8px;}
+.nav-tile-row{display:flex; align-items:flex-start; gap:12px; padding:10px 12px;}
+.nav-tile-row .nav-tile-icon{margin-bottom:0; flex-shrink:0; width:22px; text-align:center;}
+.nav-tile-row .nav-tile-title{margin-bottom:2px;}
+
+/* Guided setup wizard */
+.wizard-steps{display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap;}
+.wizard-step{flex:1; min-width:110px; text-align:center; padding:10px 8px; border-radius:10px; background:var(--panel); border:1px solid var(--border); font-size:11.5px; font-weight:700; color:var(--text-faint);}
+.wizard-step .num{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--border); color:#fff; font-size:10.5px; margin-right:5px;}
+.wizard-step.active{border-color:var(--accent); color:var(--accent); background:var(--active-tint);}
+.wizard-step.active .num{background:var(--accent);}
+.wizard-step.done{color:var(--good);}
+.wizard-step.done .num{background:var(--good);}
+.wizard-nav{display:flex; justify-content:space-between; margin-top:18px;}
+.preset-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+.preset-btn{border:1.5px solid var(--border); background:var(--panel); padding:10px 14px; border-radius:var(--radius-btn); font-size:12.5px; font-weight:600; text-align:left; min-width:150px; transition:border-color .15s, background .15s;}
+.preset-btn:hover{border-color:var(--accent); background:var(--surface-hover);}
+@media (prefers-reduced-motion: no-preference){ .preset-btn:active{transform:translateY(1px);} }
+.preset-btn .t{display:block; font-weight:700; color:var(--text);}
+.preset-btn .s{display:block; font-size:11px; color:var(--text-faint); font-weight:400; margin-top:2px;}
+.preset-btn.selected{border-color:var(--accent); background:var(--active-tint);}
+.loc-option-region{font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:var(--tracking-wide);}
+
+/* Mobile: sidebar becomes an off-canvas drawer opened via the hamburger
+   button in the topbar, closed by tapping the backdrop, a nav link, or
+   the ✕ in the drawer header. */
+@media (max-width:768px){
+  .sidebar{transform:translateX(-100%); z-index:50;}
+  .sidebar.open{transform:translateX(0); box-shadow:0 0 40px rgba(0,0,0,.35);}
+  .sidebar-backdrop.open{display:block;}
+  .content{margin-left:0;}
+  .sidebar-close{display:block;}
+  .view{padding:16px 16px 50px;}
+  .topbar{padding:10px 14px;}
+}
+
+@media (max-width:600px){
+  .grid-4, .grid-3, .grid-2, .recommend-grid, .mod-grid, .workflow-compare{grid-template-columns:1fr;}
+  .hero{padding:24px 20px;}
+  .hero h1{font-size:22px;}
+  .form-inline .form-row{min-width:100%;}
+}
+
+@media print{
+  .sidebar, .topbar, .btn, .explain-link, .sidebar-backdrop{display:none !important;}
+  .content{width:100%; margin-left:0;}
+  .view{padding:0; max-width:100%;}
+  body{background:#fff;}
+}
+
+/* ---- Dark mode: everything above already re-themes automatically via the
+   --* custom properties redefined in the :root[data-theme="dark"] block up
+   top (data-badge/tag/highlight-row/recommend-panel/th/gauge-track/wizard-
+   step/preset-btn/form-input/comfort-band/callouts all reference vars in
+   their base rules now). Only two things genuinely need a dark-specific
+   rule: .heatflow-bar-track, which has no base styles.css rule to flip (set
+   inline/elsewhere) so it needs its own dark value here; and the comfort
+   band's opacity, intentionally lower in dark mode so the fill doesn't read
+   too bright against a near-black background. ---- */
+:root[data-theme="dark"] .heatflow-bar-track{background:#1b2a3c;}
+:root[data-theme="dark"] .chart-comfort-band{opacity:.45;}
+@media print{ :root[data-theme="dark"] body{background:#fff; color:#000;} }

@@ -1,0 +1,682 @@
+<meta charset="UTF-8">
+<title>SIH26051 PPT Plan</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root{
+  --navy:#16233D; --navy-2:#1F3358; --ice:#7FA6CE; --ice-soft:#E3ECF6;
+  --amber:#DD8B2E; --amber-soft:#F7E3C6;
+  --bg:#F3F5F9; --surface:#FFFFFF; --surface-2:#EBEFF5;
+  --text:#151C29; --muted:#5B667A; --border:#D8DFE9;
+  --good:#2E7D5B; --warn:#B4551C;
+  --code-bg:#101A2E; --code-text:#DCE6F5;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1220; --surface:#121A2C; --surface-2:#182338;
+    --text:#E7ECF5; --muted:#93A0B8; --border:#26334C;
+    --navy:#9FBBE0; --navy-2:#B9CFEE; --ice:#5F86AE; --ice-soft:#1B2A40;
+    --amber:#E9A25A; --amber-soft:#2E2415;
+    --good:#5FBE93; --warn:#E08A52;
+    --code-bg:#080D18; --code-text:#CBDAEF;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1220; --surface:#121A2C; --surface-2:#182338;
+  --text:#E7ECF5; --muted:#93A0B8; --border:#26334C;
+  --navy:#9FBBE0; --navy-2:#B9CFEE; --ice:#5F86AE; --ice-soft:#1B2A40;
+  --amber:#E9A25A; --amber-soft:#2E2415;
+  --good:#5FBE93; --warn:#E08A52;
+  --code-bg:#080D18; --code-text:#CBDAEF;
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  font-size:15.5px; line-height:1.55;
+}
+h1,h2,h3{ font-family:'Newsreader',Georgia,serif; text-wrap:balance; font-weight:600; color:var(--text); }
+.mono{ font-family:'IBM Plex Mono',ui-monospace,monospace; }
+
+.shell{ display:flex; max-width:1280px; margin:0 auto; align-items:flex-start; }
+.toc{
+  position:sticky; top:0; width:236px; flex:none; height:100vh; overflow-y:auto;
+  padding:28px 16px 28px 24px; border-right:1px solid var(--border);
+}
+.toc-title{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+.toc a{
+  display:block; padding:5px 10px; margin:1px 0; border-radius:6px;
+  color:var(--muted); text-decoration:none; font-size:13.5px;
+}
+.toc a:hover{ background:var(--surface-2); color:var(--text); }
+.toc .grp{ margin-top:16px; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); opacity:.75; padding:0 10px; }
+
+main{ flex:1; min-width:0; padding:40px 48px 100px; max-width:920px; }
+
+header.hero{ margin-bottom:36px; }
+.eyebrow{
+  display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono'; font-size:12px;
+  letter-spacing:.05em; color:var(--navy); background:var(--ice-soft); border:1px solid var(--border);
+  padding:4px 10px; border-radius:5px; margin-bottom:16px;
+}
+h1.title{ font-size:34px; margin:0 0 10px; }
+.lede{ color:var(--muted); font-size:16px; max-width:64ch; }
+
+section{ margin:56px 0; scroll-margin-top:20px; }
+section > h2{ font-size:23px; margin:0 0 6px; display:flex; align-items:baseline; gap:10px; }
+section > h2 .num{ font-family:'IBM Plex Mono'; font-size:14px; color:var(--amber); font-weight:600; }
+.section-intro{ color:var(--muted); margin:0 0 20px; max-width:68ch; }
+
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  padding:22px 24px; margin-bottom:16px;
+}
+.card + .card{ margin-top:14px; }
+
+/* slide breakdown card */
+.slide-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:28px; }
+.slide-head{
+  background:var(--navy); color:var(--ice-soft); padding:14px 22px;
+  display:flex; align-items:center; gap:12px;
+}
+:root[data-theme="dark"] .slide-head, @media (prefers-color-scheme:dark){ }
+.slide-head .n{
+  font-family:'IBM Plex Mono'; font-size:13px; background:rgba(255,255,255,.14);
+  padding:3px 9px; border-radius:5px; color:#fff;
+}
+.slide-head h3{ color:#fff; font-size:18px; margin:0; }
+.slide-body{ padding:20px 24px 24px; display:grid; gap:16px; }
+.field{ display:grid; grid-template-columns:132px 1fr; gap:14px; align-items:start; }
+.field .k{
+  font-family:'IBM Plex Mono'; font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--muted); padding-top:3px;
+}
+.field .v{ color:var(--text); }
+.field .v p{ margin:0 0 8px; }
+.field .v ul{ margin:0; padding-left:18px; }
+.field .v li{ margin-bottom:6px; }
+.field.takeaway .v{ font-style:italic; color:var(--navy-2); font-family:'Newsreader'; font-size:16.5px; }
+.field.remove .v{ color:var(--warn); }
+hr.thin{ border:none; border-top:1px solid var(--border); margin:2px 0; }
+
+/* diagrams */
+.diagram-box{ background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:18px; }
+.diagram-box svg{ width:100%; height:auto; display:block; }
+figcaption{ font-size:12.5px; color:var(--muted); margin-top:8px; text-align:center; }
+
+/* pill / tags */
+.tag{
+  display:inline-block; font-family:'IBM Plex Mono'; font-size:11px; padding:2px 8px;
+  border-radius:4px; background:var(--ice-soft); color:var(--navy-2); margin-right:6px;
+}
+.tag.amber{ background:var(--amber-soft); color:var(--amber); }
+
+/* final content */
+.final-slide{ background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:14px; overflow:hidden; }
+.final-slide .fh{ background:var(--surface-2); padding:10px 20px; font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--muted); display:flex; justify-content:space-between; }
+.final-slide .fb{ padding:18px 22px; }
+.final-slide .fb .stitle{ font-weight:700; font-size:16px; margin-bottom:10px; }
+.final-slide .fb ul{ margin:0; padding-left:20px; }
+.final-slide .fb li{ margin-bottom:8px; }
+.final-slide .fb li b{ color:var(--navy-2); }
+
+/* palette swatches */
+.palette{ display:flex; gap:14px; flex-wrap:wrap; margin-top:14px; }
+.swatch{ width:132px; }
+.swatch .chip{ height:72px; border-radius:8px; border:1px solid var(--border); }
+.swatch .lbl{ font-size:12px; margin-top:6px; }
+.swatch .hex{ font-family:'IBM Plex Mono'; font-size:11.5px; color:var(--muted); }
+
+table.namelist{ width:100%; border-collapse:collapse; }
+table.namelist td, table.namelist th{ text-align:left; padding:9px 10px; border-bottom:1px solid var(--border); font-size:14px; }
+table.namelist th{ font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+table.namelist td.name{ font-weight:600; color:var(--navy-2); }
+
+.script-block{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:22px 26px; }
+.script-block p{ margin:0 0 14px; }
+.script-block .beat{ font-family:'IBM Plex Mono'; font-size:11px; color:var(--amber); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:4px; }
+
+.two-col{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+.judge-col h4{ margin:0 0 10px; font-size:14px; font-family:'IBM Plex Mono'; text-transform:uppercase; letter-spacing:.04em; }
+.judge-col.strong h4{ color:var(--good); }
+.judge-col.doubt h4{ color:var(--warn); }
+.judge-col ul{ margin:0; padding-left:18px; }
+.judge-col li{ margin-bottom:9px; }
+
+.checklist{ display:grid; gap:0; }
+.check-row{ display:flex; gap:12px; align-items:flex-start; padding:10px 4px; border-bottom:1px solid var(--border); }
+.check-row:last-child{ border-bottom:none; }
+.check-row .box{ width:18px; height:18px; border-radius:4px; background:var(--good); flex:none; margin-top:2px; position:relative; }
+.check-row .box::after{ content:""; position:absolute; left:4px; top:1px; width:5px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg); }
+.check-row .note{ color:var(--muted); font-size:13px; }
+
+footer.end{ margin-top:60px; padding-top:20px; border-top:1px solid var(--border); color:var(--muted); font-size:13px; }
+
+@media (max-width:880px){
+  .shell{ flex-direction:column; }
+  .toc{ position:relative; width:100%; height:auto; border-right:none; border-bottom:1px solid var(--border); }
+  main{ padding:28px 20px 60px; }
+  .field{ grid-template-columns:1fr; }
+  .two-col{ grid-template-columns:1fr; }
+}
+</style>
+
+<div class="shell">
+  <nav class="toc">
+    <div class="toc-title">SIH26051 Plan</div>
+    <a href="#audit">Source audit</a>
+    <a href="#rules">Template rules</a>
+    <div class="grp">Slide breakdown</div>
+    <a href="#slide1">1 · Title</a>
+    <a href="#slide2">2 · Proposed Solution</a>
+    <a href="#slide3">3 · Technical Approach</a>
+    <a href="#slide4">4 · Feasibility</a>
+    <a href="#slide5">5 · Impact</a>
+    <a href="#slide6">6 · References</a>
+    <div class="grp">Deliverables</div>
+    <a href="#final">Final PPT content</a>
+    <a href="#diagrams">Diagram blueprint</a>
+    <a href="#screenshot">Screenshot blueprint</a>
+    <a href="#style">Visual style</a>
+    <a href="#names">Product names</a>
+    <a href="#pitch">30-sec pitch</a>
+    <a href="#script">2-min script</a>
+    <a href="#judge">Judge perspective</a>
+    <a href="#checklist">Compliance check</a>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <span class="eyebrow mono">PS ID SIH26051 · DRDO · Renewable/Sustainable Energy · Software</span>
+      <h1 class="title">Content, Storyline &amp; Visual Plan</h1>
+      <p class="lede">For the official 6-slide SIH Idea PPT template, built from the actual template file, the AreaTherm prototype, and <span class="mono">README.md</span> / <span class="mono">ARCHITECTURE.md</span> as the research foundation. No winner-deck files were supplied, so storytelling choices below follow general, well-established strong-deck patterns rather than any specific analyzed deck.</p>
+    </header>
+
+    <section id="audit">
+      <h2><span class="num">00</span> Source audit — what changed and why</h2>
+      <p class="section-intro">Three findings from opening the actual files, before any content was written.</p>
+
+      <div class="card">
+        <p><b>The template file you gave me isn't blank.</b> <span class="mono">SIH26051_Official_Format.pptx</span> has 7 slides, not 6. Slides 1–6 are the real submission format; slide 7 is titled "Important Instructions" and explicitly says to delete it before uploading — it states the hard rules: <b>max 6 slides including the title</b>, avoid paragraphs, use points/diagrams, save as PDF for the portal, and don't change the idea-detail pointers on the content slides beyond what's yours to fill in.</p>
+      </div>
+      <div class="card">
+        <p><b>Slides 2–6 were already fully written</b> — with a product called "ThermoShel," an ANSYS-based simulation approach, and DIHAR/Ladakh field-trial citations. That content describes a different technical approach than what AreaTherm actually is (a client-side RC thermal engine, not ANSYS) and a different unconfirmed product name. Per your direction, that content is treated as a prior draft and fully replaced below — only the slide <i>structure</i> (headings, layout, field order) is kept from it.</p>
+      </div>
+      <div class="card">
+        <p><b>"Project report" and "winner PPTs" weren't separate files.</b> No such files exist in your Downloads or in the AreaTherm project folder. <span class="mono">README.md</span> and <span class="mono">ARCHITECTURE.md</span> already function as that research foundation — they document the exact heat-balance equations, the optimization method, the live data sources, and an explicit "what's real vs. what's a documented assumption" table. Per your direction, those two files stand in for the report, and no specific winner-deck was analyzed since none was provided — the storytelling guidance below draws on general strong-deck conventions (concise points, diagram-over-paragraph, visible working prototype) rather than a named source.</p>
+      </div>
+    </section>
+
+    <section id="rules">
+      <h2><span class="num">01</span> Template constraints (from the file itself)</h2>
+      <div class="card">
+        <ul>
+          <li><b>6 slides maximum, including the title slide.</b> Slide 7 (instructions) is deleted before submission and doesn't count.</li>
+          <li><b>Fixed slide order and headings</b> for slides 3–6: <span class="mono">TECHNICAL APPROACH</span> → <span class="mono">FEASIBILITY AND VIABILITY</span> → <span class="mono">IMPACT AND BENEFITS</span> → <span class="mono">RESEARCH AND REFERENCES</span>. Slide 2's title is the team's own idea/product name — not a fixed category heading.</li>
+          <li><b>Points and diagrams over paragraphs</b> — stated explicitly in the template's own instructions slide.</li>
+          <li><b>Submit as PDF only</b> — no .pptx or .docx accepted on the portal.</li>
+          <li><b>PS ID, title, theme and category are fixed</b> and already correct on slide 1 of the template — nothing to change there except Team ID and Team Name.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- SLIDE 1 -->
+    <div class="slide-card" id="slide1">
+      <div class="slide-head"><span class="n">SLIDE 1</span><h3>TITLE PAGE</h3></div>
+      <div class="slide-body">
+        <div class="field"><div class="k">Purpose</div><div class="v"><p>The judge's first read is a compliance check — correct PS, correct theme, correct category. Get this exactly right and move on; it isn't a place to sell the idea.</p></div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Exact content</div><div class="v">
+          <p>Already correct in the template — no change needed except the two brackets:</p>
+          <ul>
+            <li>Problem Statement ID – <b>SIH26051</b></li>
+            <li>Problem Statement Title – <b>Software Based Model Development for Design of Area Specific Shelter for Thermal Comfort Maintenance</b></li>
+            <li>Theme – <b>Renewable/Sustainable Energy</b></li>
+            <li>PS Category – <b>Software</b></li>
+            <li>Team ID – <span class="tag amber">fill in</span></li>
+            <li>Team Name – <span class="tag amber">fill in</span></li>
+          </ul>
+        </div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Visual / diagram</div><div class="v"><p>None. Keep the template's existing title-slide design (background bar, logo oval) exactly as-is.</p></div></div>
+        <div class="field"><div class="k">Layout</div><div class="v"><p>Unchanged from the template.</p></div></div>
+        <div class="field"><div class="k">From prototype</div><div class="v"><p>Nothing — this slide has no room for implementation evidence, and none belongs here.</p></div></div>
+        <div class="field remove"><div class="k">Remove</div><div class="v"><p>Any product name, tagline, or technical detail — this is identification only.</p></div></div>
+        <div class="field takeaway"><div class="k">Judge takeaway</div><div class="v">"Right problem statement, right theme, right category — a clean start."</div></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2 -->
+    <div class="slide-card" id="slide2">
+      <div class="slide-head"><span class="n">SLIDE 2</span><h3>Idea Title &amp; Proposed Solution</h3></div>
+      <div class="slide-body">
+        <div class="field"><div class="k">Purpose</div><div class="v"><p>In the time it takes to read one slide, the judge should know what's being built, what gap it fills, and what makes it different from "just another shelter design." This slide carries the most weight in a first read.</p></div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Exact content</div><div class="v">
+          <p><b>Title:</b> [PRODUCT NAME – TO BE FINALIZED] – Software Platform for Area-Specific Passive Shelter Thermal Design</p>
+          <ul>
+            <li><b>Proposed Solution:</b> A software platform that predicts a shelter's indoor thermal behaviour for a specific site — before it is built — using live climate data and the shelter's actual geometry and materials.</li>
+            <li><b>How it works:</b> The user picks a location and a shelter design; the platform fetches live weather and solar climatology for that exact site and runs an hourly, physics-based simulation predicting indoor temperature, solar gain, and heat loss.</li>
+            <li><b>The gap it fills:</b> Shelters in regions like Ladakh are often built to one generalized design regardless of site climate — warm in daytime sun, but dropping close to outdoor temperature after sunset from unassessed heat loss. This platform lets designers compare wall, roof, insulation and orientation options for the exact site before construction, not after.</li>
+            <li><b>USP:</b> Works across any Indian climate zone, not a single fixed location; a built-in optimizer automatically ranks design combinations on comfort, heat retention and cost; every output traces back to its underlying heat-balance equation — not a black box.</li>
+          </ul>
+        </div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Visual / diagram</div><div class="v">
+          <p><b>Original 3-box "problem → solution" flow</b> — see full spec and mockup in <a href="#diagrams">§ Diagram blueprint</a>. Left box: a generic shelter under a split day/night sky (the fixed-design problem). Middle box: a pin + thermometer + gear (site climate and design fed into the model). Right box: a shelter with a check-mark badge (the site-optimized result). One short label under each icon, nothing inside the boxes beyond that.</p>
+        </div></div>
+        <div class="field"><div class="k">Layout</div><div class="v"><p>Title in the template's existing title band. The four bullets fill the upper ~65% of the content area, left-aligned, one line each where possible. The 3-box diagram runs full-width along the bottom ~30%, beneath the text — not beside it, so bullet lines don't get squeezed narrow. The team-name oval stays in the template's existing top-left position, untouched.</p></div></div>
+        <div class="field"><div class="k">From prototype</div><div class="v"><p>None on this slide — it's the concept pitch. Save the one screenshot in this deck for Slide 3, where it proves the concept is real.</p></div></div>
+        <div class="field remove"><div class="k">Remove</div><div class="v"><p>No mention of ANSYS. No architecture stack detail (Spring Boot / Angular / MySQL — that belongs at most in a one-clause mention on Slide 3). No list of the 10 reference locations by name. No equations.</p></div></div>
+        <div class="field takeaway"><div class="k">Judge takeaway</div><div class="v">"This is a general method for testing shelter designs against real site climate — not a tool built for one location."</div></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3 -->
+    <div class="slide-card" id="slide3">
+      <div class="slide-head"><span class="n">SLIDE 3</span><h3>Technical Approach</h3></div>
+      <div class="slide-body">
+        <div class="field"><div class="k">Purpose</div><div class="v"><p>Show the approach is a real, transparent engineering method — and that it's already running, not just planned on paper.</p></div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Exact content</div><div class="v">
+          <ul>
+            <li><b>Core engine:</b> A two-node (indoor-air + thermal-mass) resistance-capacitance heat-balance model, run hour-by-hour — the same sol-air physics basis used in standard building energy-simulation practice, fully documented and reproducible on-screen.</li>
+            <li><b>Live data:</b> Site-specific hourly weather from Open-Meteo, plus 20-year solar/temperature climatology from NASA POWER — no hand-entered or hardcoded climate data.</li>
+            <li><b>Design inputs:</b> A material-property library (conductivity, specific heat, density, solar absorptivity) across wall, roof, insulation, thermal-mass and glazing options, plus user-defined geometry and orientation.</li>
+            <li><b>Optimization:</b> Multi-criteria weighted scoring — comfort, heat retention, solar utilization, efficiency, cost — across generated design candidates, with sensitivity analysis on the top-ranked design.</li>
+            <li><b>Prototype status:</b> A working browser-based prototype, architected to port directly onto a production backend without a redesign.</li>
+          </ul>
+        </div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Visual / diagram</div><div class="v">
+          <p><b>Original 6-stage left-to-right pipeline</b> — see mockup in <a href="#diagrams">§ Diagram blueprint</a>: Location &amp; Climate Input → Shelter Geometry &amp; Materials → Hourly Thermal Simulation → Multi-Criteria Optimization → Sensitivity Analysis → Recommended Design &amp; Report. One small icon and a ≤4-word label per stage; no sub-detail text inside the diagram itself.</p>
+        </div></div>
+        <div class="field"><div class="k">Layout</div><div class="v"><p>Title top. The 6-stage pipeline spans the full width immediately below the title, occupying roughly the top third of the content area. Below it, a two-column split: left column (~55%) holds the five bullets; right column (~45%) holds the cropped prototype screenshot with its caption directly beneath.</p></div></div>
+        <div class="field"><div class="k">From prototype</div><div class="v"><p>The <b>Thermal Simulation</b> screen — crop to just the "Heat Flow Analysis (Daily Totals)" bar chart and the "Thermal Comfort Score" gauge (the two bottom panels). Exclude the left nav sidebar, browser chrome, and the top indoor-vs-ambient temperature chart to keep the crop compact. Full spec in <a href="#screenshot">§ Screenshot blueprint</a>.</p></div></div>
+        <div class="field remove"><div class="k">Remove</div><div class="v"><p>Don't reproduce the RC-model equations from ARCHITECTURE.md §3 — state that the method is documented and reproducible, not the maths itself. Don't list the full material-property table. Don't detail the target production stack beyond one clause.</p></div></div>
+        <div class="field takeaway"><div class="k">Judge takeaway</div><div class="v">"This is a working, physics-based simulation already producing real numbers on screen — not a slide-only concept."</div></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4 -->
+    <div class="slide-card" id="slide4">
+      <div class="slide-head"><span class="n">SLIDE 4</span><h3>Feasibility and Viability</h3></div>
+      <div class="slide-body">
+        <div class="field"><div class="k">Purpose</div><div class="v"><p>Get ahead of the judge's skepticism. Naming the real gap and showing a credible plan to close it builds more trust than claiming zero risk.</p></div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Exact content</div><div class="v">
+          <ul>
+            <li><b>Feasible now:</b> The full workflow — live climate ingestion, thermal simulation, optimization — already runs end-to-end in a working prototype; the heat-balance method is an established, transparent building-physics approach, not experimental. Live weather/solar data is available for any Indian location with no manual data-collection dependency.</li>
+            <li><b>Open challenges:</b> The model is a transient single-zone approximation, not yet checked against instrumented readings from a real, built shelter; some material inputs rely on published reference values rather than site-tested figures.</li>
+            <li><b>Mitigation:</b> A validation module (MAE / RMSE / MAPE / R²) is already built to compare predictions against measured data — the next step is instrumenting a pilot shelter. Material properties and every modelling assumption are user-editable and disclosed, not hidden.</li>
+          </ul>
+        </div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Visual / diagram</div><div class="v">
+          <p><b>Two-panel comparison</b>, not a flow diagram: left panel "Feasible" under a check-mark icon-in-circle, right panel "Open Challenge → Mitigation" under a caution-triangle icon-in-circle, each with 2 short lines. See mockup in <a href="#diagrams">§ Diagram blueprint</a>.</p>
+        </div></div>
+        <div class="field"><div class="k">Layout</div><div class="v"><p>Title top. Two equal-width panels side by side below it, each with its icon-in-circle top-left, a short heading, then two bullets.</p></div></div>
+        <div class="field"><div class="k">From prototype</div><div class="v"><p>None — a screenshot here reads as padding on an honest risk-assessment slide.</p></div></div>
+        <div class="field remove"><div class="k">Remove</div><div class="v"><p>Don't restate every item from README's "known limitations" list (no auth persistence, no 3D preview, no ML surrogate, localStorage-only) — keep only the two a DRDO reviewer actually weighs: field-validation gap and the single-zone approximation. Fold the rest into "documented in the assumptions register" as one clause, if at all.</p></div></div>
+        <div class="field takeaway"><div class="k">Judge takeaway</div><div class="v">"The team knows exactly where the model's real gap is — field validation — and has already built the instrumentation to close it."</div></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5 -->
+    <div class="slide-card" id="slide5">
+      <div class="slide-head"><span class="n">SLIDE 5</span><h3>Impact and Benefits</h3></div>
+      <div class="slide-body">
+        <div class="field"><div class="k">Purpose</div><div class="v"><p>Connect the engineering to who actually gains from it — this is what makes the idea matter beyond technical novelty.</p></div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Exact content</div><div class="v">
+          <ul>
+            <li><b>Who benefits:</b> Defence personnel and installations in high-altitude, remote regions; disaster-relief and rehabilitation planners; rural users needing climate-appropriate storage — the platform already models non-residential comfort needs, not human comfort alone.</li>
+            <li><b>Social:</b> Warmer, safer indoor conditions in extreme cold without relying on continuous fuel-based heating.</li>
+            <li><b>Economic:</b> Underperforming designs are caught before construction, not after — lower heating-fuel dependency and life-cycle cost.</li>
+            <li><b>Environmental:</b> Passive, solar-driven design reduces reliance on diesel/kerosene heating and its emissions.</li>
+          </ul>
+        </div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Visual / diagram</div><div class="v"><p><b>3-icon "who benefits" row</b> — defence installation, disaster-relief hand/tent, farm storage silo — each in a colored circle with a one-line label, above 3 small benefit tags (social / economic / environmental). See mockup in <a href="#diagrams">§ Diagram blueprint</a>.</p></div></div>
+        <div class="field"><div class="k">Layout</div><div class="v"><p>Title top. Icon row across the top third. Below it, three short benefit lines as compact side-by-side cards (social / economic / environmental), each with its own small tag color.</p></div></div>
+        <div class="field"><div class="k">From prototype</div><div class="v"><p>None — this is an outcomes slide, not a feature slide.</p></div></div>
+        <div class="field remove"><div class="k">Remove</div><div class="v"><p>Don't list every comfort profile from data.js verbatim (livestock / seed storage / nursery / equipment) — compress to "beyond human comfort" as one supporting clause. Don't invent numeric savings, cost percentages, or CO₂ figures — none exist in any source.</p></div></div>
+        <div class="field takeaway"><div class="k">Judge takeaway</div><div class="v">"One platform already covers defence shelters, disaster relief, and non-residential storage — not a single-purpose demo."</div></div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6 -->
+    <div class="slide-card" id="slide6">
+      <div class="slide-head"><span class="n">SLIDE 6</span><h3>Research and References</h3></div>
+      <div class="slide-body">
+        <div class="field"><div class="k">Purpose</div><div class="v"><p>Show the work is grounded in real literature and live data sources, not invented from scratch.</p></div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Exact content</div><div class="v">
+          <ul>
+            <li>DIHAR (DRDO), Leh — Solar Thermal Technology for Passive Space Heating of Shelters <span class="tag">add link</span></li>
+            <li>ASHRAE Fundamentals Handbook — sol-air temperature &amp; building heat-transfer analysis <span class="tag">add link</span></li>
+            <li>Open-Meteo — open forecast weather API, live hourly climate input — <span class="mono">open-meteo.com</span></li>
+            <li>NASA POWER — 20-year (2001–2020) solar irradiance &amp; temperature climatology — <span class="mono">power.larc.nasa.gov</span></li>
+            <li>Passive Solar Heated (PSH) Buildings in Ladakh — HIAL–TERI–FHNW research <span class="tag">add link</span></li>
+            <li>Published studies on thermal comfort of vernacular Ladakhi dwellings in a cold-desert climate <span class="tag">add link</span></li>
+          </ul>
+        </div></div>
+        <hr class="thin">
+        <div class="field"><div class="k">Visual / diagram</div><div class="v"><p>None needed — a clean, well-formatted reference list is the expected and correct treatment for this slide.</p></div></div>
+        <div class="field"><div class="k">Layout</div><div class="v"><p>Title top, single-column list: bold source name, one-line description, link placeholder where not yet finalized.</p></div></div>
+        <div class="field"><div class="k">From prototype</div><div class="v"><p>None.</p></div></div>
+        <div class="field remove"><div class="k">Remove</div><div class="v"><p>Drop the ANSYS documentation reference from the old draft — it doesn't inform this model.</p></div></div>
+        <div class="field takeaway"><div class="k">Judge takeaway</div><div class="v">"The physics and data sources are named and checkable."</div></div>
+      </div>
+    </div>
+
+    <!-- FINAL CONTENT -->
+    <section id="final">
+      <h2><span class="num">02</span> Final PPT content — ready to paste</h2>
+      <p class="section-intro">All six slides, text only, in the exact order and headings of the official template.</p>
+
+      <div class="final-slide">
+        <div class="fh"><span>SLIDE 1</span><span>Title Page</span></div>
+        <div class="fb">
+          <div class="stitle">SMART INDIA HACKATHON 2026</div>
+          <ul>
+            <li>Problem Statement ID – SIH26051</li>
+            <li>Problem Statement Title – Software Based Model Development for Design of Area Specific Shelter for Thermal Comfort Maintenance</li>
+            <li>Theme – Renewable/Sustainable Energy</li>
+            <li>PS Category – Software</li>
+            <li>Team ID – <b>[Your Team ID]</b></li>
+            <li>Team Name – <b>[Your Team Name]</b></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="final-slide">
+        <div class="fh"><span>SLIDE 2</span><span>Idea Title &amp; Proposed Solution</span></div>
+        <div class="fb">
+          <div class="stitle">[PRODUCT NAME – TO BE FINALIZED] – Software Platform for Area-Specific Passive Shelter Thermal Design</div>
+          <ul>
+            <li><b>Proposed Solution:</b> A software platform that predicts a shelter's indoor thermal behaviour for a specific site — before it is built — using live climate data and the shelter's actual geometry and materials.</li>
+            <li><b>How it works:</b> User selects a location and shelter design; the platform fetches live weather and solar climatology for that site and runs an hourly physics-based simulation predicting indoor temperature, solar gain, and heat loss.</li>
+            <li><b>The gap it fills:</b> Shelters in regions like Ladakh are often built to one generalized design regardless of site climate — warm in daytime sun, dropping near outdoor temperature after sunset. This platform lets designers compare wall, roof, insulation and orientation options for the exact site before construction.</li>
+            <li><b>USP:</b> Works across any Indian climate zone, not one fixed location; a built-in optimizer ranks design combinations automatically; every output traces to its underlying heat-balance equation.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="final-slide">
+        <div class="fh"><span>SLIDE 3</span><span>Technical Approach</span></div>
+        <div class="fb">
+          <ul>
+            <li><b>Core engine:</b> Two-node (indoor-air + thermal-mass) resistance-capacitance heat-balance model, run hour-by-hour on standard sol-air building physics — fully documented and reproducible on-screen.</li>
+            <li><b>Live data:</b> Site-specific hourly weather (Open-Meteo) + 20-year solar/temperature climatology (NASA POWER) — no hardcoded climate data.</li>
+            <li><b>Design inputs:</b> Material-property library (conductivity, specific heat, density, absorptivity) across wall/roof/insulation/thermal-mass/glazing, plus user-defined geometry and orientation.</li>
+            <li><b>Optimization:</b> Multi-criteria weighted scoring (comfort, heat retention, solar utilization, efficiency, cost) across generated candidates, with sensitivity analysis on the top design.</li>
+            <li><b>Prototype:</b> Working browser-based prototype, architected to port to a production backend without redesign.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="final-slide">
+        <div class="fh"><span>SLIDE 4</span><span>Feasibility and Viability</span></div>
+        <div class="fb">
+          <ul>
+            <li><b>Feasible now:</b> Live climate ingestion, simulation and optimization already run end-to-end in a working prototype, on an established, transparent building-physics method. Live data is available for any Indian location, with no manual data-collection dependency.</li>
+            <li><b>Open challenge:</b> Transient single-zone approximation, not yet checked against instrumented readings from a real built shelter; some material inputs use published reference values rather than site-tested figures.</li>
+            <li><b>Mitigation:</b> A validation module (MAE/RMSE/MAPE/R²) is already built to compare predictions against measured data — next step is instrumenting a pilot shelter. All material properties and assumptions are user-editable and disclosed.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="final-slide">
+        <div class="fh"><span>SLIDE 5</span><span>Impact and Benefits</span></div>
+        <div class="fb">
+          <ul>
+            <li><b>Who benefits:</b> Defence personnel and installations in high-altitude, remote regions; disaster-relief and rehabilitation planners; rural users needing climate-appropriate storage — models non-residential comfort needs too, not human comfort alone.</li>
+            <li><b>Social:</b> Warmer, safer indoor conditions in extreme cold without continuous fuel-based heating.</li>
+            <li><b>Economic:</b> Underperforming designs caught before construction, not after — lower heating-fuel dependency and life-cycle cost.</li>
+            <li><b>Environmental:</b> Passive, solar-driven design reduces diesel/kerosene heating reliance and its emissions.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="final-slide">
+        <div class="fh"><span>SLIDE 6</span><span>Research and References</span></div>
+        <div class="fb">
+          <ul>
+            <li>DIHAR (DRDO), Leh — Solar Thermal Technology for Passive Space Heating of Shelters [add link]</li>
+            <li>ASHRAE Fundamentals Handbook — sol-air temperature &amp; building heat-transfer analysis [add link]</li>
+            <li>Open-Meteo — open forecast weather API — open-meteo.com</li>
+            <li>NASA POWER — 20-year solar/temperature climatology — power.larc.nasa.gov</li>
+            <li>Passive Solar Heated (PSH) Buildings in Ladakh — HIAL–TERI–FHNW research [add link]</li>
+            <li>Studies on thermal comfort of vernacular Ladakhi dwellings in a cold-desert climate [add link]</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- DIAGRAM BLUEPRINT -->
+    <section id="diagrams">
+      <h2><span class="num">03</span> Diagram blueprint</h2>
+      <p class="section-intro">Four original diagrams, each designed for this project specifically — no generic "insert a diagram here."</p>
+
+      <h3 style="font-size:17px;margin-bottom:10px;">Slide 2 — Problem → Solution</h3>
+      <div class="diagram-box">
+        <svg viewBox="0 0 760 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow1" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+          </defs>
+          <!-- box 1 -->
+          <rect x="20" y="30" width="200" height="130" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+          <path d="M75 110 L75 90 L120 60 L165 90 L165 110 Z" fill="none" stroke="var(--navy)" stroke-width="3"/>
+          <line x1="120" y1="60" x2="120" y2="30" stroke="var(--warn)" stroke-width="3"/>
+          <circle cx="120" cy="26" r="7" fill="var(--warn)"/>
+          <line x1="60" y1="130" x2="180" y2="130" stroke="var(--navy)" stroke-width="3"/>
+          <text x="120" y="180" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" fill="var(--text)">One fixed design,</text>
+          <text x="120" y="196" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" fill="var(--text)">any climate</text>
+
+          <path d="M228 95 L268 95" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow1)"/>
+
+          <!-- box 2 -->
+          <rect x="280" y="30" width="200" height="130" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+          <circle cx="345" cy="90" r="14" fill="none" stroke="var(--amber)" stroke-width="3"/>
+          <line x1="345" y1="104" x2="345" y2="122" stroke="var(--amber)" stroke-width="3"/>
+          <rect x="392" y="70" width="10" height="40" rx="5" fill="none" stroke="var(--ice)" stroke-width="3"/>
+          <circle cx="397" cy="66" r="7" fill="var(--ice)"/>
+          <circle cx="440" cy="95" r="16" fill="none" stroke="var(--navy)" stroke-width="3"/>
+          <circle cx="440" cy="95" r="4" fill="var(--navy)"/>
+          <text x="380" y="180" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" fill="var(--text)">Site climate + design</text>
+          <text x="380" y="196" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" fill="var(--text)">fed into physics model</text>
+
+          <path d="M488 95 L528 95" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow1)"/>
+
+          <!-- box 3 -->
+          <rect x="540" y="30" width="200" height="130" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+          <path d="M595 110 L595 90 L640 60 L685 90 L685 110 Z" fill="none" stroke="var(--good)" stroke-width="3"/>
+          <line x1="580" y1="130" x2="700" y2="130" stroke="var(--good)" stroke-width="3"/>
+          <circle cx="670" cy="70" r="13" fill="var(--good)"/>
+          <path d="M664 70 L668 75 L677 64" stroke="#fff" stroke-width="2.4" fill="none"/>
+          <text x="640" y="180" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" fill="var(--text)">Comfort-optimized,</text>
+          <text x="640" y="196" text-anchor="middle" font-family="IBM Plex Sans" font-size="13" fill="var(--text)">site-specific shelter</text>
+        </svg>
+        <figcaption>3 boxes, one row, arrows only between them — no text inside the boxes beyond the two-line label under each icon. Placed full-width along the bottom third of Slide 2, below the bullets.</figcaption>
+      </div>
+
+      <h3 style="font-size:17px;margin:30px 0 10px;">Slide 3 — 6-stage technical pipeline</h3>
+      <div class="diagram-box">
+        <svg viewBox="0 0 900 170" xmlns="http://www.w3.org/2000/svg">
+          <defs><marker id="arrow2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker></defs>
+          <g font-family="IBM Plex Sans" font-size="10.5" fill="var(--text)" text-anchor="middle">
+            <!-- stage template repeated -->
+            <!-- 1 -->
+            <rect x="10" y="20" width="130" height="90" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <circle cx="75" cy="50" r="14" fill="none" stroke="var(--ice)" stroke-width="2.5"/>
+            <path d="M75 44 v12 M69 50 h12" stroke="var(--ice)" stroke-width="2"/>
+            <text x="75" y="85">Location &amp;</text><text x="75" y="98">Climate Input</text>
+            <path d="M144 65 L166 65" stroke="var(--muted)" marker-end="url(#arrow2)"/>
+            <!-- 2 -->
+            <rect x="170" y="20" width="130" height="90" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <rect x="222" y="42" width="26" height="18" fill="none" stroke="var(--navy)" stroke-width="2.2"/>
+            <line x1="212" y1="60" x2="258" y2="60" stroke="var(--navy)" stroke-width="2.2"/>
+            <text x="235" y="85">Geometry &amp;</text><text x="235" y="98">Materials</text>
+            <path d="M304 65 L326 65" stroke="var(--muted)" marker-end="url(#arrow2)"/>
+            <!-- 3 -->
+            <rect x="330" y="20" width="130" height="90" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <circle cx="395" cy="50" r="12" fill="none" stroke="var(--amber)" stroke-width="2.2"/>
+            <path d="M395 42 v8 l6 4" stroke="var(--amber)" stroke-width="2"/>
+            <text x="395" y="85">Hourly Thermal</text><text x="395" y="98">Simulation</text>
+            <path d="M464 65 L486 65" stroke="var(--muted)" marker-end="url(#arrow2)"/>
+            <!-- 4 -->
+            <rect x="490" y="20" width="130" height="90" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <path d="M540 55 h30 M555 40 v30" stroke="var(--navy)" stroke-width="2.2"/>
+            <circle cx="540" cy="55" r="3" fill="var(--navy)"/><circle cx="570" cy="55" r="3" fill="var(--navy)"/>
+            <text x="555" y="85">Multi-Criteria</text><text x="555" y="98">Optimization</text>
+            <path d="M624 65 L646 65" stroke="var(--muted)" marker-end="url(#arrow2)"/>
+            <!-- 5 -->
+            <rect x="650" y="20" width="130" height="90" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <line x1="680" y1="45" x2="750" y2="45" stroke="var(--ice)" stroke-width="2"/>
+            <circle cx="710" cy="45" r="4" fill="var(--ice)"/>
+            <line x1="680" y1="60" x2="750" y2="60" stroke="var(--ice)" stroke-width="2"/>
+            <circle cx="695" cy="60" r="4" fill="var(--ice)"/>
+            <text x="715" y="85">Sensitivity</text><text x="715" y="98">Analysis</text>
+            <path d="M784 65 L806 65" stroke="var(--muted)" marker-end="url(#arrow2)"/>
+            <!-- 6 -->
+            <rect x="810" y="20" width="130" height="90" rx="8" fill="var(--surface)" stroke="var(--border)"/>
+            <rect x="855" y="38" width="30" height="36" rx="2" fill="none" stroke="var(--good)" stroke-width="2.2"/>
+            <path x="0" d="M862 56 l6 6 l12 -14" stroke="var(--good)" stroke-width="2.2" fill="none"/>
+            <text x="875" y="85">Recommended</text><text x="875" y="98">Design &amp; Report</text>
+          </g>
+        </svg>
+        <figcaption>One row, six stages, ≤4-word label per box — no sub-detail text inside the diagram. Spans full slide width immediately below the title, occupying the top third of the content area.</figcaption>
+      </div>
+    </section>
+
+    <!-- SCREENSHOT BLUEPRINT -->
+    <section id="screenshot">
+      <h2><span class="num">04</span> Screenshot blueprint</h2>
+      <p class="section-intro">One screenshot in the whole deck — the deck is diagram-led, and a single, well-chosen proof point of a working prototype outweighs a gallery of dashboard shots.</p>
+      <div class="card">
+        <p><b>Screen:</b> Thermal Simulation (<span class="mono">#/simulation</span>) — the "Heat Flow Analysis (Daily Totals)" panel and the "Thermal Comfort Score" gauge.</p>
+        <p><b>Why this screen and not the dashboard:</b> it shows computed numbers, not navigation — solar input, wall/roof/floor/opening/ventilation losses, net energy, and a scored comfort gauge with four sub-metrics. That's evidence the engine actually runs, which a dashboard screenshot doesn't prove.</p>
+        <p><b>Crop:</b> the two bottom panels only — "Heat Flow Analysis (Daily Totals)" bar chart and the "Thermal Comfort Score" circular gauge with its four checklist lines. Exclude the left navigation sidebar, the browser chrome/tab bar, and the top indoor-vs-ambient temperature line chart above it.</p>
+        <p><b>Keep visible:</b> the bar values (Solar Input +5.0, Wall/Roof/Floor/Opening/Ventilation losses, Net Energy −1.2 kWh/day) and the score circle reading 50/100 with its daytime/night/solar-utilization/heat-retention lines.</p>
+        <p><b>Annotation:</b> none needed — the panel's own labels are self-explanatory.</p>
+        <p><b>Caption below the image:</b> "Live output from the working prototype — computed heat balance and comfort score for a real, user-configured shelter design."</p>
+        <p><b>Placement:</b> Slide 3, right column (~45% width), beneath the pipeline diagram, beside the five technical-approach bullets.</p>
+      </div>
+    </section>
+
+    <!-- STYLE -->
+    <section id="style">
+      <h2><span class="num">05</span> Visual style direction</h2>
+      <p class="section-intro">Cold-region engineering, not a generic tech-startup look: navy dominates for technical seriousness, ice-blue carries the cold-climate motif, and a warm amber accent stands in for the one thing that makes passive design work — solar gain — reused nowhere else, so it stays sharp.</p>
+      <div class="palette">
+        <div class="swatch"><div class="chip" style="background:#16233D"></div><div class="lbl">Navy — dominant</div><div class="hex">#16233D</div></div>
+        <div class="swatch"><div class="chip" style="background:#7FA6CE"></div><div class="lbl">Ice blue — supporting</div><div class="hex">#7FA6CE</div></div>
+        <div class="swatch"><div class="chip" style="background:#DD8B2E"></div><div class="lbl">Amber — accent (solar gain)</div><div class="hex">#DD8B2E</div></div>
+        <div class="swatch"><div class="chip" style="background:#F3F5F9;border:1px solid #D8DFE9"></div><div class="lbl">Off-white ground</div><div class="hex">#F3F5F9</div></div>
+        <div class="swatch"><div class="chip" style="background:#2E7D5B"></div><div class="lbl">Good / feasible</div><div class="hex">#2E7D5B</div></div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <ul>
+          <li><b>Motif:</b> one small icon inside a thin-stroke circle, repeated for every pipeline stage and every "who benefits" figure — the one recurring visual element across the deck.</li>
+          <li><b>Fonts for the actual PPT</b> (PowerPoint-safe, so nothing substitutes oddly on submission): <b>Cambria</b> bold for titles, <b>Calibri</b> for body bullets — both ship with Office and render identically on any judge's machine.</li>
+          <li><b>Never</b> a color bar or accent stripe as the motif — use the icon-in-circle instead.</li>
+          <li>Keep every bullet to one line where possible; two lines maximum.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- NAMES -->
+    <section id="names">
+      <h2><span class="num">06</span> Product name options</h2>
+      <p class="section-intro">Ten options — pick one before the final PDF export. None of these are used anywhere in the deck content above; every slide says <span class="mono">[PRODUCT NAME – TO BE FINALIZED]</span> until you decide.</p>
+      <table class="namelist">
+        <tr><th>Name</th><th>Why it fits</th></tr>
+        <tr><td class="name">ShelterSense</td><td>Plain-language, implies the platform reasons about shelter behaviour</td></tr>
+        <tr><td class="name">ClimaShelter</td><td>Directly names the climate-to-shelter link</td></tr>
+        <tr><td class="name">ThermoSite</td><td>"Site" emphasizes the area-specific angle over a generic thermal tool</td></tr>
+        <tr><td class="name">TerraTherm</td><td>Earth/site + thermal, short and pronounceable</td></tr>
+        <tr><td class="name">ShelterIQ</td><td>Signals the optimizer/decision-support angle, not just simulation</td></tr>
+        <tr><td class="name">SiteTherm</td><td>Compact, engineering-tool sounding</td></tr>
+        <tr><td class="name">HabiTherm</td><td>Habitat + thermal, broadens beyond "shelter" to any inhabited/stored space</td></tr>
+        <tr><td class="name">PassivEdge</td><td>Ties directly to "passive design," implies competitive advantage</td></tr>
+        <tr><td class="name">ClimateFit</td><td>Plain phrase capturing "designed to fit the climate"</td></tr>
+        <tr><td class="name">ThermalScope</td><td>Implies visibility/prediction into thermal behaviour before building</td></tr>
+      </table>
+    </section>
+
+    <!-- PITCH -->
+    <section id="pitch">
+      <h2><span class="num">07</span> 30-second pitch</h2>
+      <div class="script-block">
+        <p>"Shelters in places like Ladakh are usually built to one generic design, no matter the site — warm in the sun, freezing by nightfall. We've built a software platform that predicts a shelter's real indoor thermal behaviour for a specific location before it's ever constructed. It pulls live weather and solar data for that site, runs an hourly physics-based simulation, and automatically ranks wall, roof, insulation and orientation combinations to find the best-performing design. It's not a mockup — the prototype already runs this end-to-end and shows the actual computed numbers."</p>
+      </div>
+    </section>
+
+    <!-- SCRIPT -->
+    <section id="script">
+      <h2><span class="num">08</span> 2-minute presentation script</h2>
+      <div class="script-block">
+        <span class="beat">The problem (25s)</span>
+        <p>DRDO's brief is about shelters for extreme, high-altitude, remote regions like Ladakh. In practice, these shelters get built to a fixed, generalized design — and that design isn't checked against the specific site's climate. The result: a shelter that's warm under daytime sun but drops close to outdoor temperature after sunset, because nobody modelled its actual heat loss before building it.</p>
+        <span class="beat">The solution (25s)</span>
+        <p>We've built a software platform that closes that gap. A designer picks a location and a shelter design — geometry, materials, orientation — and the platform pulls live weather and long-term solar climatology for that exact site, then runs an hourly, physics-based thermal simulation to predict indoor temperature, solar gain, and heat loss before a single wall is built.</p>
+        <span class="beat">How it works (30s)</span>
+        <p>Underneath, it's a two-node resistance-capacitance heat-balance model — standard building physics, not a black box — fed by a material-property library and live climate data. A multi-criteria optimizer then automatically generates and ranks design candidates on comfort, heat retention, solar utilization and cost, with sensitivity analysis showing exactly which change — orientation, insulation, window area — moves the comfort score the most.</p>
+        <span class="beat">What we've built (25s)</span>
+        <p>This isn't a concept slide — it's a working prototype today. It fetches live weather for any Indian location, runs the full simulation, and produces a scored, ranked, explainable recommendation, with every computed number traceable back to its formula.</p>
+        <span class="beat">Why it matters (15s)</span>
+        <p>The same model already covers more than defence shelters — disaster relief, seed and produce storage, livestock shelter — one platform, evaluated against real climate, for anywhere it's needed.</p>
+      </div>
+    </section>
+
+    <!-- JUDGE -->
+    <section id="judge">
+      <h2><span class="num">09</span> Judge perspective</h2>
+      <div class="two-col">
+        <div class="judge-col strong">
+          <h4>Strongest parts</h4>
+          <ul>
+            <li>A real, transparent physics model (documented, reproducible formulas) — not a claimed black-box "AI will handle it."</li>
+            <li>A working end-to-end prototype today, not a plan — with live weather, not hardcoded demo data.</li>
+            <li>Optimization + sensitivity analysis is genuine decision support, not a single fixed recommendation.</li>
+            <li>Scope beyond one building type — defence, disaster relief, agricultural storage — from the same engine.</li>
+          </ul>
+        </div>
+        <div class="judge-col doubt">
+          <h4>Where judges may push back</h4>
+          <ul>
+            <li>No field validation yet against a real, instrumented shelter — the model is unproven against measured reality.</li>
+            <li>Single-zone, transient approximation, not a full CFD — a judge may ask why not a validated commercial tool.</li>
+            <li>Team/Product identity isn't finalized (Team ID, Team Name, product name all placeholders) — decide these before the actual submission.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card" style="margin-top:18px;">
+        <p><b>What to emphasize in Q&amp;A:</b> the "Explain Calculation" transparency is itself the answer to "why not ANSYS/a validated tool" — every number is auditable rather than trusted blind, and the validation module is already built and waiting on field data, not an afterthought.</p>
+        <p><b>What's missing and should be decided before submission:</b> Team ID, Team Name, and the product name (see <a href="#names">§ Product names</a>) — all three are placeholders in every source file today.</p>
+      </div>
+    </section>
+
+    <!-- CHECKLIST -->
+    <section id="checklist">
+      <h2><span class="num">10</span> Final compliance check</h2>
+      <div class="card checklist">
+        <div class="check-row"><div class="box"></div><div><div>Official SIH template followed exactly</div><div class="note">Same 6-slide structure and headings as the source file's slides 1–6.</div></div></div>
+        <div class="check-row"><div class="box"></div><div><div>Correct PS ID / problem statement / theme / category</div><div class="note">SIH26051, unchanged from the template.</div></div></div>
+        <div class="check-row"><div class="box"></div><div><div>No extra slides</div><div class="note">Six slides total; the template's own 7th "instructions" slide is dropped before submission, as instructed.</div></div></div>
+        <div class="check-row"><div class="box"></div><div><div>No unsupported claims</div><div class="note">No ANSYS, no ML/AI, no DRDO validation, no field-testing, no invented numbers.</div></div></div>
+        <div class="check-row"><div class="box"></div><div><div>Live weather integration represented correctly</div><div class="note">Open-Meteo + NASA POWER named explicitly, not the outdated "no live API" note from an earlier report draft.</div></div></div>
+        <div class="check-row"><div class="box"></div><div><div>Current prototype features represented accurately</div><div class="note">Two-node RC model, optimizer, sensitivity analysis, validation module — all match README/ARCHITECTURE and the screenshots reviewed.</div></div></div>
+        <div class="check-row"><div class="box"></div><div><div>README/ARCHITECTURE used as research foundation, not copied</div><div class="note">Condensed into points; no paragraph lifted verbatim.</div></div></div>
+        <div class="check-row"><div class="box"></div><div><div>Diagrams are original</div><div class="note">Four diagrams designed specifically for this pipeline and this problem, not generic clip art.</div></div></div>
+        <div class="check-row"><div class="box"></div><div><div>Text is concise, points not paragraphs</div><div class="note">Matches the template's own "avoid paragraphs" instruction.</div></div></div>
+        <div class="check-row"><div class="box"></div><div><div>One screenshot, chosen to prove functionality</div><div class="note">Thermal Simulation heat-flow + comfort score panel — not a bare dashboard shot.</div></div></div>
+        <div class="check-row"><div class="box"></div><div><div>Product name left open</div><div class="note">"[PRODUCT NAME – TO BE FINALIZED]" used throughout; ten real options offered separately.</div></div></div>
+      </div>
+    </section>
+
+    <footer class="end">Built from <span class="mono">SIH26051_Official_Format.pptx</span>, <span class="mono">C:\AreaTherm\README.md</span>, <span class="mono">C:\AreaTherm\ARCHITECTURE.md</span>, and the six AreaTherm prototype screenshots reviewed in this session. No winner-deck files were supplied for analysis.</footer>
+  </main>
+</div>

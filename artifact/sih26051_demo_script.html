@@ -1,0 +1,332 @@
+<meta charset="UTF-8">
+<title>SIH26051 Demo Script</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root{
+  --navy:#16233D; --navy-2:#1F3358; --ice:#7FA6CE; --ice-soft:#E3ECF6;
+  --amber:#DD8B2E; --amber-soft:#F7E3C6;
+  --bg:#F3F5F9; --surface:#FFFFFF; --surface-2:#EBEFF5;
+  --text:#151C29; --muted:#5B667A; --border:#D8DFE9;
+  --good:#2E7D5B; --warn:#B4551C;
+  --code-bg:#101A2E; --code-text:#DCE6F5;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0C1220; --surface:#121A2C; --surface-2:#182338;
+    --text:#E7ECF5; --muted:#93A0B8; --border:#26334C;
+    --navy:#9FBBE0; --navy-2:#B9CFEE; --ice:#5F86AE; --ice-soft:#1B2A40;
+    --amber:#E9A25A; --amber-soft:#2E2415;
+    --good:#5FBE93; --warn:#E08A52;
+    --code-bg:#080D18; --code-text:#CBDAEF;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0C1220; --surface:#121A2C; --surface-2:#182338;
+  --text:#E7ECF5; --muted:#93A0B8; --border:#26334C;
+  --navy:#9FBBE0; --navy-2:#B9CFEE; --ice:#5F86AE; --ice-soft:#1B2A40;
+  --amber:#E9A25A; --amber-soft:#2E2415;
+  --good:#5FBE93; --warn:#E08A52;
+  --code-bg:#080D18; --code-text:#CBDAEF;
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'IBM Plex Sans',system-ui,sans-serif;
+  font-size:15.5px; line-height:1.55;
+}
+h1,h2,h3{ font-family:'Newsreader',Georgia,serif; text-wrap:balance; font-weight:600; color:var(--text); }
+.mono{ font-family:'IBM Plex Mono',ui-monospace,monospace; }
+p{max-width:70ch;}
+
+.shell{ display:flex; max-width:1240px; margin:0 auto; align-items:flex-start; }
+.toc{
+  position:sticky; top:0; width:224px; flex:none; height:100vh; overflow-y:auto;
+  padding:28px 16px 28px 24px; border-right:1px solid var(--border);
+}
+.toc-title{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+.toc a{ display:block; padding:5px 10px; margin:1px 0; border-radius:6px; color:var(--muted); text-decoration:none; font-size:13.5px; }
+.toc a:hover{ background:var(--surface-2); color:var(--text); }
+.toc .grp{ margin-top:16px; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); opacity:.75; padding:0 10px; }
+
+main{ flex:1; min-width:0; padding:40px 48px 100px; max-width:900px; }
+
+header.hero{ margin-bottom:34px; }
+.eyebrow{
+  display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono'; font-size:12px;
+  letter-spacing:.05em; color:var(--navy); background:var(--ice-soft); border:1px solid var(--border);
+  padding:4px 10px; border-radius:5px; margin-bottom:16px;
+}
+h1.title{ font-size:32px; margin:0 0 10px; }
+.lede{ color:var(--muted); font-size:15.5px; max-width:66ch; }
+
+section{ margin:48px 0; scroll-margin-top:20px; }
+section > h2{ font-size:22px; margin:0 0 6px; display:flex; align-items:baseline; gap:10px; }
+section > h2 .num{ font-family:'IBM Plex Mono'; font-size:13px; color:var(--amber); font-weight:600; }
+.section-intro{ color:var(--muted); margin:0 0 18px; max-width:68ch; }
+
+.card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:20px 22px; margin-bottom:14px; }
+
+/* role legend */
+.role-row{ display:flex; gap:14px; }
+.role-card{ flex:1; border-radius:10px; padding:16px 18px; border:1px solid var(--border); background:var(--surface); }
+.role-card .tag{ font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.05em; padding:2px 8px; border-radius:4px; display:inline-block; margin-bottom:8px; }
+.role-card.a .tag{ background:var(--ice-soft); color:var(--navy-2); }
+.role-card.b .tag{ background:var(--amber-soft); color:var(--amber); }
+.role-card h4{ font-family:'IBM Plex Sans'; font-size:15.5px; margin:0 0 6px; font-weight:700; }
+.role-card p{ margin:0; color:var(--muted); font-size:13.5px; }
+
+/* run-of-show table */
+table.runsheet{ width:100%; border-collapse:collapse; }
+table.runsheet th,table.runsheet td{ text-align:left; padding:9px 12px; border-bottom:1px solid var(--border); font-size:13.5px; vertical-align:top; }
+table.runsheet th{ font-family:'IBM Plex Mono'; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+table.runsheet td.time{ font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--muted); white-space:nowrap; }
+table.runsheet td.who span{ font-family:'IBM Plex Mono'; font-size:10.5px; padding:2px 7px; border-radius:4px; }
+table.runsheet td.who .a{ background:var(--ice-soft); color:var(--navy-2); }
+table.runsheet td.who .b{ background:var(--amber-soft); color:var(--amber); }
+table.runsheet td.who .ab{ background:var(--surface-2); color:var(--text); }
+
+/* beat header */
+.beat-head{ display:flex; align-items:baseline; gap:12px; margin:40px 0 14px; }
+.beat-head .t{ font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--amber); background:var(--amber-soft); padding:3px 9px; border-radius:5px; white-space:nowrap; }
+.beat-head h3{ font-size:18px; margin:0; }
+
+/* dialogue */
+.dialogue{ display:flex; gap:16px; margin-bottom:14px; }
+.dialogue .who{ flex:0 0 108px; font-family:'IBM Plex Mono'; font-size:11px; text-transform:uppercase; letter-spacing:.04em; padding-top:4px; }
+.dialogue.a .who{ color:var(--navy-2); }
+.dialogue.b .who{ color:var(--amber); }
+.dialogue .line{ flex:1; border-left:3px solid; padding:2px 0 2px 16px; }
+.dialogue.a .line{ border-color:var(--navy-2); }
+.dialogue.b .line{ border-color:var(--amber); }
+.dialogue .line p{ margin:0; max-width:62ch; }
+
+/* stage direction */
+.stage{ background:var(--surface-2); border:1px dashed var(--border); border-radius:8px; padding:11px 16px; font-family:'IBM Plex Mono'; font-size:12px; color:var(--muted); margin:8px 0 18px; }
+.stage b{ color:var(--text); font-weight:600; }
+
+/* contingency */
+.contingency{ background:var(--amber-soft); border:1px solid var(--border); border-radius:10px; padding:16px 20px; }
+.contingency h4{ margin:0 0 8px; font-size:14px; color:var(--warn); font-family:'IBM Plex Mono'; text-transform:uppercase; letter-spacing:.04em; }
+.contingency ul{ margin:0; padding-left:18px; }
+.contingency li{ margin-bottom:6px; }
+
+/* qa table */
+.qa-row{ border-bottom:1px solid var(--border); padding:14px 0; }
+.qa-row:last-child{ border-bottom:none; }
+.qa-row .q{ font-weight:700; margin-bottom:6px; }
+.qa-row .who-tag{ font-family:'IBM Plex Mono'; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; padding:2px 7px; border-radius:4px; margin-right:8px; }
+.qa-row .who-tag.a{ background:var(--ice-soft); color:var(--navy-2); }
+.qa-row .who-tag.b{ background:var(--amber-soft); color:var(--amber); }
+.qa-row .a-text{ color:var(--muted); margin:0; }
+
+footer.end{ margin-top:60px; padding-top:20px; border-top:1px solid var(--border); color:var(--muted); font-size:13px; }
+
+@media (max-width:880px){
+  .shell{ flex-direction:column; }
+  .toc{ position:relative; width:100%; height:auto; border-right:none; border-bottom:1px solid var(--border); }
+  main{ padding:28px 20px 60px; }
+  .role-row{ flex-direction:column; }
+  .dialogue{ flex-direction:column; gap:4px; }
+  .dialogue .who{ padding-top:0; }
+}
+</style>
+
+<div class="shell">
+  <nav class="toc">
+    <div class="toc-title">SIH26051 Demo Script</div>
+    <a href="#howto">How to use this</a>
+    <a href="#roles">Roles</a>
+    <a href="#runsheet">Run-of-show</a>
+    <div class="grp">The Script</div>
+    <a href="#beat1">1 · Cold Open</a>
+    <a href="#beat2">2 · The Problem</a>
+    <a href="#beat3">3 · Live Data</a>
+    <a href="#beat4">4 · Thermal Model</a>
+    <a href="#beat5">5 · Optimization</a>
+    <a href="#beat6">6 · Sensitivity</a>
+    <a href="#beat7">7 · Validation</a>
+    <a href="#beat8">8 · Bringing It Together</a>
+    <a href="#beat9">9 · Impact &amp; Feasibility</a>
+    <a href="#beat10">10 · Close</a>
+    <div class="grp">Backup</div>
+    <a href="#contingency">If the demo breaks</a>
+    <a href="#qa">Q&amp;A prep</a>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <span class="eyebrow mono">PS ID SIH26051 · DRDO · Renewable/Sustainable Energy · Software</span>
+      <h1 class="title">Two-Person Demo Script</h1>
+      <p class="lede">A spoken, live-demo script for presenting the working AreaTherm prototype — one voice
+      carrying the technical approach (the physics engine, live data), the other carrying the analytical
+      layer (optimization, sensitivity, validation). Built to be read aloud while actually operating the
+      app, not just talked over slides.</p>
+    </header>
+
+    <section id="howto">
+      <h2><span class="num">00</span> How to use this script</h2>
+      <p class="section-intro">This is a run-of-show, not a transcript to memorize word-for-word. Say it in your own voice — the beats, the order, and what's shown on screen at each moment are the part that matters.</p>
+      <div class="card">
+        <ul style="margin:0;padding-left:20px;">
+          <li><b>Core runtime: ~8 minutes.</b> Built for a working-prototype demo slot with time for a live walkthrough, not just a pitch. If you're given less time, cut Beat 6 (Sensitivity) and shorten Beat 9; if given more, let the live screens breathe — pause after each click and let the judges actually read the numbers.</li>
+          <li><b>Before you start:</b> open the app to the Dashboard, confirm you have working internet (live weather needs it — see <a href="#contingency">contingency</a> below), and decide together which reference location you'll demo with (Leh is the natural choice — it's the brief's founding case).</li>
+          <li><b>One laptop, one operator:</b> whichever presenter is speaking in a given beat should also be the one clicking — don't hand the keyboard back and forth mid-sentence.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="roles">
+      <h2><span class="num">01</span> Roles</h2>
+      <p class="section-intro">Split by what each person is actually best positioned to defend under questioning — not an arbitrary 50/50.</p>
+      <div class="role-row">
+        <div class="role-card a">
+          <span class="tag mono">Presenter A</span>
+          <h4>Technical Lead</h4>
+          <p>Owns the problem framing, the physics model, live data sourcing, and system architecture. Answers any question that starts with "how does the model actually..."</p>
+        </div>
+        <div class="role-card b">
+          <span class="tag mono">Presenter B</span>
+          <h4>Analytical Lead</h4>
+          <p>Owns the optimization method, sensitivity analysis, validation approach, and result interpretation. Answers any question that starts with "how do you know the recommendation is..."</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="runsheet">
+      <h2><span class="num">02</span> Run-of-show</h2>
+      <table class="runsheet">
+        <tr><th>Time</th><th>Beat</th><th>Speaker</th><th>Screen</th></tr>
+        <tr><td class="time">0:00–0:30</td><td>Cold Open</td><td class="who"><span class="ab">A + B</span></td><td>Dashboard</td></tr>
+        <tr><td class="time">0:30–1:15</td><td>The Problem</td><td class="who"><span class="a">A</span></td><td>Dashboard</td></tr>
+        <tr><td class="time">1:15–2:15</td><td>Live Data</td><td class="who"><span class="a">A</span></td><td>Guided Setup / Location</td></tr>
+        <tr><td class="time">2:15–3:30</td><td>Thermal Model</td><td class="who"><span class="a">A</span></td><td>Thermal Simulation</td></tr>
+        <tr><td class="time">3:30–4:30</td><td>Optimization</td><td class="who"><span class="b">B</span></td><td>Optimization</td></tr>
+        <tr><td class="time">4:30–5:15</td><td>Sensitivity</td><td class="who"><span class="b">B</span></td><td>Optimization (sensitivity chart)</td></tr>
+        <tr><td class="time">5:15–6:00</td><td>Validation</td><td class="who"><span class="b">B</span></td><td>Validation</td></tr>
+        <tr><td class="time">6:00–6:45</td><td>Bringing It Together</td><td class="who"><span class="ab">A + B</span></td><td>Evaluator Summary</td></tr>
+        <tr><td class="time">6:45–7:30</td><td>Impact &amp; Feasibility</td><td class="who"><span class="ab">A + B</span></td><td>(no screen — direct to judges)</td></tr>
+        <tr><td class="time">7:30–8:00</td><td>Close</td><td class="who"><span class="ab">A + B</span></td><td>Dashboard or Evaluator Summary</td></tr>
+      </table>
+    </section>
+
+    <!-- BEAT 1 -->
+    <div id="beat1"></div>
+    <div class="beat-head"><span class="t mono">0:00–0:30</span><h3>1 · Cold Open</h3></div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>Ladakh gets more solar irradiance in a year than most of India — and shelters there still go close to freezing indoors, every single night.</p></div></div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>Not because the sun isn't there. Because nobody checked, before building, whether that specific design would hold the heat it collects.</p></div></div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>We built a platform that checks — before a single wall goes up. This is it, running live.</p></div></div>
+    <div class="stage"><b>Show:</b> Dashboard, as-is. Don't click anything yet — this beat is spoken over the resting screen.</div>
+
+    <!-- BEAT 2 -->
+    <div id="beat2"></div>
+    <div class="beat-head"><span class="t mono">0:30–1:15</span><h3>2 · The Problem, Framed Technically</h3></div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>The DRDO brief is specific: shelters for extreme, high-altitude, remote regions. In practice, these get built to one generalized design, and that design is never checked against the actual site's climate.</p></div></div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>The failure mode is always the same: high envelope heat loss, poor insulation choices, a window-to-wall ratio that wasn't sized for that latitude, and no thermal mass to carry daytime solar gain into the night. Every one of those is a design decision — which means every one of them is something a model can test before construction, not after.</p></div></div>
+    <div class="stage"><b>Show:</b> stay on Dashboard. Optional: gesture at the empty "Run a simulation to populate" state — it's an honest empty state, not a fabricated demo number.</div>
+
+    <!-- BEAT 3 -->
+    <div id="beat3"></div>
+    <div class="beat-head"><span class="t mono">1:15–2:15</span><h3>3 · Live Data, Not a Hardcoded Demo</h3></div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>We're not going to show you a canned dataset. Watch — I'm selecting Leh, Ladakh right now, and this fetch is going out to two live sources: Open-Meteo for a real 7-day weather forecast, and NASA POWER for a twenty-year solar and temperature climatology.</p></div></div>
+    <div class="stage"><b>Do:</b> Navigate to <b>Location &amp; Climate</b> (or Guided Setup Step 1). Select <b>Leh, Ladakh</b>. Click <b>"Load Real Weather (Open-Meteo)."</b> Wait for the fetch to complete (a few seconds) before continuing.</div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>That's it loading now — hourly temperature and solar irradiance for the next week, averaged into a typical-day curve, plus a real twenty-year average for annual solar potential. No location in this app ships with pre-written climate numbers. Every one of the ten reference sites, from Ladakh to Nagpur, pulls this same way.</p></div></div>
+    <div class="stage"><b>Show:</b> the green "✓ Data source" badge and the ambient-temperature / solar-irradiance charts that just rendered. Point at the badge specifically — it's the app's running commitment that nothing here is illustrative.</div>
+
+    <!-- BEAT 4 -->
+    <div id="beat4"></div>
+    <div class="beat-head"><span class="t mono">2:15–3:30</span><h3>4 · The Thermal Model, Proven On Screen</h3></div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>Underneath, this is a two-node resistance-capacitance heat-balance model — one node for indoor air, one for thermal mass — solved hour by hour. It's the same sol-air-temperature approach used in standard building energy analysis, not something we invented for this.</p></div></div>
+    <div class="stage"><b>Do:</b> Navigate to <b>Thermal Simulation</b>. Click <b>"Run Thermal Simulation."</b></div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>That's a full 24-hour simulation, just now, on this exact shelter design and this exact climate: solar gain, wall loss, roof loss, floor loss, ventilation loss, and what the thermal mass is charging and discharging — all resolved hour by hour.</p></div></div>
+    <div class="stage"><b>Do:</b> Scroll to the <b>Heat Balance Detail</b> table. Click <b>"Explain calculation →"</b> next to <b>Heat loss — walls</b>.</div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>And this is the part I actually want to sit on: every number on this screen opens into its own formula, with the real numbers from this run substituted in. This isn't a black box producing a score you have to trust — it's a model you can audit, term by term.</p></div></div>
+
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>Which is exactly the point where this stops being a simulation and starts being decision support — and that's mine to walk through.</p></div></div>
+
+    <!-- BEAT 5 -->
+    <div id="beat5"></div>
+    <div class="beat-head"><span class="t mono">3:30–4:30</span><h3>5 · Optimization</h3></div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>One simulation tells you how one design performs. The actual design question is: out of every reasonable combination of orientation, insulation, glazing, and thermal mass — which one performs best, for this specific site?</p></div></div>
+    <div class="stage"><b>Do:</b> Navigate to <b>Optimization</b>. Click <b>"Run Design Optimization."</b></div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>That just generated and scored around sixty candidate designs — varying orientation, insulation thickness, window area, glazing type, and thermal mass — on a weighted formula: forty percent thermal comfort, twenty-five percent heat retention, fifteen percent solar utilization, and the rest split between energy demand and estimated cost. Those weights aren't fixed — a reviewer can drag them and re-rank instantly.</p></div></div>
+    <div class="stage"><b>Show:</b> the candidate table (Design A through E) and the green <b>Recommended Shelter Design</b> panel. Read one or two concrete numbers off it — orientation, insulation thickness, comfort score.</div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>This is the recommendation — with the full comparison table right below it, so nobody has to take our word for why it won against the other four.</p></div></div>
+
+    <!-- BEAT 6 -->
+    <div id="beat6"></div>
+    <div class="beat-head"><span class="t mono">4:30–5:15</span><h3>6 · Sensitivity Analysis</h3></div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>The next question a good reviewer asks is: of all those variables, which one actually matters most? That's what this chart answers.</p></div></div>
+    <div class="stage"><b>Do:</b> Scroll to <b>Sensitivity Analysis</b>. Point at the top bar.</div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>Each bar is the same baseline design with one parameter improved, showing exactly how many points that single change moves the comfort score. Whichever bar is longest — that's not a guess, that's the design lever this specific site cares about most. It's genuine sensitivity analysis, not a fixed talking point we wrote in advance.</p></div></div>
+
+    <!-- BEAT 7 -->
+    <div id="beat7"></div>
+    <div class="beat-head"><span class="t mono">5:15–6:00</span><h3>7 · Validation — Where We're Honest About the Gap</h3></div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>And here's the question we'd ask if we were sitting where you are: how do you know any of this matches reality? Right now — we don't, fully. No shelter built to this model has been instrumented yet. What we do have is the mechanism to check it the moment that data exists.</p></div></div>
+    <div class="stage"><b>Do:</b> Navigate to <b>Validation</b>. Point at the measured-data table and the error-metric cards (MAE / RMSE / MAPE / R²).</div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>A field team enters measured indoor temperatures against this model's prediction, and it computes standard error metrics automatically — mean absolute error, RMSE, R-squared — plus a measured-versus-predicted plot. The rows on screen right now are placeholders, clearly labelled as such. The instrument is real; the field data is the next step, not a claim we're making today.</p></div></div>
+
+    <!-- BEAT 8 -->
+    <div id="beat8"></div>
+    <div class="beat-head"><span class="t mono">6:00–6:45</span><h3>8 · Bringing It Together</h3></div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>So the physics engine produces a number —</p></div></div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>— and the optimizer turns that number into a decision. This screen is where both halves land in one place.</p></div></div>
+    <div class="stage"><b>Do:</b> Navigate to <b>Evaluator Summary</b>. Point at the comfort-score gauge and the "Why This Design?" checklist.</div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>Location, climate severity, the comfort score, and underneath it, in plain language, exactly why this specific configuration was recommended — for this specific site.</p></div></div>
+
+    <!-- BEAT 9 -->
+    <div id="beat9"></div>
+    <div class="beat-head"><span class="t mono">6:45–7:30</span><h3>9 · Impact &amp; Feasibility</h3></div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>This isn't scoped to one building type. The same comfort model already supports non-human occupancy profiles — seed storage, livestock, agricultural produce — so it covers defence shelters, disaster-relief structures, and rural storage from one engine.</p></div></div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>And we're not overstating where it stands: it's a transient, single-zone approximation, not a full CFD model, and it hasn't been checked against a built, instrumented shelter yet. Both of those are named on screen, not hidden — because a model that hides its own limitations is worth less than one that doesn't.</p></div></div>
+
+    <!-- BEAT 10 -->
+    <div id="beat10"></div>
+    <div class="beat-head"><span class="t mono">7:30–8:00</span><h3>10 · Close</h3></div>
+    <div class="dialogue a"><div class="who">Presenter A</div><div class="line"><p>Every number you just watched us produce came from a live fetch and a real formula — nothing was pre-loaded for this room.</p></div></div>
+    <div class="dialogue b"><div class="who">Presenter B</div><div class="line"><p>We'd rather spend the next few minutes on your questions than on more slides. Where should we start?</p></div></div>
+
+    <section id="contingency">
+      <h2><span class="num">03</span> If the demo breaks</h2>
+      <div class="contingency">
+        <h4>No internet / live fetch fails on stage</h4>
+        <ul>
+          <li>Open-Meteo results are cached in the browser for 7 days — if you ran the same location once beforehand on the same machine, a second click at Beat 3 will resolve instantly from cache rather than failing.</li>
+          <li>If the fetch genuinely fails live, don't stall on it: say plainly, "that's a live network call and it just failed — here's what it looks like when it succeeds," and switch to a second browser tab already holding a completed run from rehearsal. Name it as a rehearsal run, not this session's data.</li>
+          <li>Never claim a cached or pre-run number as if it were fetched live in front of the judges — the whole pitch rests on "nothing here is illustrative"; one fudged number undermines that instantly.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="qa">
+      <h2><span class="num">04</span> Q&amp;A prep</h2>
+      <p class="section-intro">Answer assigned by who actually owns that part of the system — hand off cleanly rather than both talking at once.</p>
+      <div class="card">
+        <div class="qa-row">
+          <div class="q"><span class="who-tag a">A</span>Why not use EnergyPlus, TRNSYS, or ANSYS instead of building your own model?</div>
+          <p class="a-text">Those are valid full-building tools, and heavier than this problem needs for a first design-screening pass. Our model uses the same underlying building-physics principle — sol-air temperature, resistance-capacitance heat balance — but stays transparent and fast enough to evaluate sixty candidate designs in seconds, with every term auditable on screen. That trade favors rapid design comparison over single-run precision, and it's an explicit, disclosed choice, not a shortcut we're hiding.</p>
+        </div>
+        <div class="qa-row">
+          <div class="q"><span class="who-tag b">B</span>How do you know the recommended design is actually correct?</div>
+          <p class="a-text">We don't claim field-validated accuracy — we claim a transparent, documented method and a working validation mechanism ready for the moment field data exists. That's exactly what the Validation screen you saw is for.</p>
+        </div>
+        <div class="qa-row">
+          <div class="q"><span class="who-tag a">A</span>What happens to this if the internet is down at the actual construction site?</div>
+          <p class="a-text">The live-fetch step happens once, during design — not during operation. A designer runs this on a connected machine before construction to pick the design; the shelter itself needs no connectivity afterward.</p>
+        </div>
+        <div class="qa-row">
+          <div class="q"><span class="who-tag b">B</span>Are the optimization weights meaningful, or just for show?</div>
+          <p class="a-text">They're live — dragging the weight sliders and re-running changes which candidate is recommended, in front of you, because the score is a real weighted sum over the same computed metrics, not a fixed label attached after the fact.</p>
+        </div>
+        <div class="qa-row">
+          <div class="q"><span class="who-tag a">A</span>What's the plan to take this from prototype to production?</div>
+          <p class="a-text">The current build is a dependency-free browser prototype so every claim we make is something you can watch run, right now, without a server. It's architected so the thermal engine — which has no framework dependencies today — ports directly onto a production backend (Spring Boot, MySQL) without a redesign, and that path is documented, not hand-waved.</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="end">Companion to <span class="mono">sih26051_ppt_plan.html</span> — same source grounding (<span class="mono">README.md</span>, <span class="mono">ARCHITECTURE.md</span>, the live AreaTherm prototype). No claim in this script exceeds what the running app actually does.</footer>
+  </main>
+</div>

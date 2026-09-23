@@ -1,0 +1,665 @@
+<meta charset="UTF-8">
+<title>AreaTherm Docs</title>
+<style>
+:root{
+  --navy-900:#0b1a2b; --navy-800:#122840; --navy-700:#1a3a5c;
+  --accent:#1f8a9e; --accent-bright:#2fb8cf;
+  --bg:#f5f8f9; --panel:#ffffff; --border:#dde4e9;
+  --text:#16232f; --text-muted:#5c6b78; --text-faint:#8b98a6;
+  --good:#1a8a4a; --warn:#a3690a; --bad:#c1352e;
+  --good-bg:#e7f6ec; --good-border:#bfe3cc;
+  --warn-bg:#faf0dd; --warn-border:#eed8ab;
+  --code-bg:#101a26; --code-text:#d7e3ea;
+  --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  --sans:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1520; --panel:#131e2b; --border:#253340;
+    --text:#e7edf2; --text-muted:#9aabb8; --text-faint:#71828f;
+    --good:#4cc987; --warn:#e0a842; --bad:#e2695f;
+    --good-bg:#12261c; --good-border:#1f4030;
+    --warn-bg:#2a2211; --warn-border:#4a3b17;
+    --code-bg:#080f18; --code-text:#c9d6de;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1520; --panel:#131e2b; --border:#253340;
+  --text:#e7edf2; --text-muted:#9aabb8; --text-faint:#71828f;
+  --good:#4cc987; --warn:#e0a842; --bad:#e2695f;
+  --good-bg:#12261c; --good-border:#1f4030;
+  --warn-bg:#2a2211; --warn-border:#4a3b17;
+  --code-bg:#080f18; --code-text:#c9d6de;
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0; font-family:var(--sans); background:var(--bg); color:var(--text); font-size:15px; line-height:1.6;}
+a{color:var(--accent);}
+h1,h2,h3,h4{text-wrap:balance; font-weight:700; color:var(--text);}
+code, pre, .mono{font-family:var(--mono);}
+::selection{background:var(--accent); color:#fff;}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+.shell{display:flex; min-width:0;}
+
+/* ---- TOC sidebar ---- */
+.toc{
+  width:252px; flex-shrink:0; background:linear-gradient(180deg,var(--navy-900),var(--navy-800));
+  color:#cfe0ea; position:sticky; top:0; height:100vh; overflow-y:auto; padding:22px 0 30px;
+}
+.toc .brand{padding:0 20px 16px; border-bottom:1px solid rgba(255,255,255,.08); margin-bottom:10px;}
+.toc .brand .mark{width:32px; height:32px; border-radius:8px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12.5px; margin-bottom:8px;}
+.toc .brand .name{font-weight:700; font-size:15px; color:#fff;}
+.toc .brand .sub{font-size:10.5px; color:#89a2b2; letter-spacing:.03em; margin-top:1px;}
+.toc nav{display:flex; flex-direction:column; padding:6px 12px;}
+.toc .grp-label{font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:#5f7787; padding:14px 10px 5px;}
+.toc a{display:block; padding:6px 10px; border-radius:6px; font-size:12.8px; color:#aec2cf; text-decoration:none; line-height:1.35;}
+.toc a:hover{background:rgba(255,255,255,.06); color:#fff;}
+.toc a.current{background:var(--accent); color:#fff; font-weight:600;}
+.toc .meta{padding:16px 20px 0; font-size:10.5px; color:#5f7787; font-family:var(--mono); border-top:1px solid rgba(255,255,255,.08); margin-top:14px;}
+
+/* ---- Main content ---- */
+main{flex:1; min-width:0; max-width:920px; padding:44px 56px 100px;}
+.doc-header{margin-bottom:38px; padding-bottom:26px; border-bottom:1px solid var(--border);}
+.doc-header .kicker{font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:10px;}
+.doc-header h1{font-size:32px; margin:0 0 8px;}
+.doc-header .tagline{font-size:15.5px; color:var(--text-muted); font-style:italic; margin:0 0 16px;}
+.doc-header .desc{max-width:66ch; color:var(--text-muted); margin:0;}
+.doc-header .facts{display:flex; gap:22px; flex-wrap:wrap; margin-top:18px; font-size:12.5px; font-family:var(--mono); color:var(--text-faint);}
+.doc-header .facts b{color:var(--text);}
+
+section{margin-bottom:52px; scroll-margin-top:20px;}
+section > h2{font-size:22px; margin:0 0 6px; display:flex; align-items:baseline; gap:10px;}
+section > h2 .num{font-family:var(--mono); font-size:14px; color:var(--text-faint); font-weight:600;}
+section > .lede{color:var(--text-muted); max-width:70ch; margin:0 0 22px;}
+h3{font-size:16px; margin:26px 0 10px;}
+h4{font-size:13.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--text-muted); margin:20px 0 8px;}
+p{max-width:72ch;}
+p, li{color:var(--text);}
+ul, ol{padding-left:22px;}
+li{margin-bottom:5px;}
+
+/* Callouts */
+.callout{border-radius:8px; padding:14px 18px; margin:16px 0; font-size:13.8px;}
+.callout.real{background:var(--good-bg); border:1px solid var(--good-border); color:var(--good);}
+.callout.illustrative{background:var(--warn-bg); border:1px solid var(--warn-border); color:var(--warn);}
+.callout p{color:inherit; margin:0; max-width:none;}
+.callout strong{color:inherit;}
+
+/* Tables */
+.table-wrap{overflow-x:auto; margin:16px 0; border:1px solid var(--border); border-radius:8px;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th,td{padding:9px 13px; border-bottom:1px solid var(--border); text-align:left; vertical-align:top;}
+th{font-size:10.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--text-muted); background:var(--bg); font-weight:700;}
+tr:last-child td{border-bottom:none;}
+td code{background:var(--bg); padding:1px 5px; border-radius:4px; font-size:12px;}
+.num{font-variant-numeric:tabular-nums;}
+
+/* Code blocks */
+.code-wrap{overflow-x:auto; margin:16px 0; border-radius:8px;}
+pre{background:var(--code-bg); color:var(--code-text); padding:16px 18px; margin:0; font-size:12.6px; line-height:1.6; overflow-x:auto; border-radius:8px;}
+.code-label{display:flex; justify-content:space-between; align-items:center; font-size:11px; font-family:var(--mono); color:var(--text-faint); margin:16px 0 -4px;}
+
+/* Formula blocks */
+.formula{background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:14px 18px; margin:14px 0; font-family:var(--mono); font-size:13px; overflow-x:auto; color:var(--text);}
+.formula .comment{color:var(--text-faint);}
+
+/* Module grid */
+.mod-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:18px 0;}
+@media (max-width:700px){.mod-grid{grid-template-columns:1fr;}}
+.mod{border:1px solid var(--border); border-radius:8px; padding:14px 16px; background:var(--panel);}
+.mod .t{font-weight:700; font-size:13.8px; display:flex; justify-content:space-between; align-items:center; gap:8px;}
+.mod .s{font-size:12.5px; color:var(--text-muted); margin-top:5px;}
+.pill{font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:2px 7px; border-radius:999px; white-space:nowrap;}
+.pill.real{background:var(--good-bg); color:var(--good);}
+.pill.illustrative{background:var(--warn-bg); color:var(--warn);}
+
+/* Repo tree */
+.tree{font-family:var(--mono); font-size:12.6px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:16px 20px; overflow-x:auto; line-height:1.75; color:var(--text);}
+.tree .c{color:var(--text-faint);}
+
+/* Mermaid container */
+.diagram{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:18px; margin:16px 0; overflow-x:auto;}
+
+/* Links row */
+.link-row{display:flex; gap:10px; flex-wrap:wrap; margin:16px 0;}
+.link-btn{display:inline-flex; align-items:center; gap:7px; padding:9px 15px; border:1px solid var(--border); border-radius:7px; background:var(--panel); color:var(--text); text-decoration:none; font-size:13px; font-weight:600;}
+.link-btn:hover{border-color:var(--accent); color:var(--accent);}
+.link-btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+.link-btn.primary:hover{background:var(--accent-bright); color:#fff;}
+
+.foot{margin-top:60px; padding-top:20px; border-top:1px solid var(--border); font-size:12px; color:var(--text-faint); font-family:var(--mono);}
+
+@media (max-width:860px){
+  .shell{flex-direction:column;}
+  .toc{position:relative; width:100%; height:auto; max-height:340px;}
+  main{padding:30px 20px 70px; max-width:100%;}
+}
+</style>
+
+<div class="shell">
+  <aside class="toc" id="toc">
+    <div class="brand">
+      <div class="mark">AT</div>
+      <div class="name">AreaTherm</div>
+      <div class="sub">Technical Documentation</div>
+    </div>
+    <nav id="tocNav">
+      <a href="#overview">Overview</a>
+      <a href="#problem">Problem Statement</a>
+      <a href="#workflow">Design Workflow</a>
+      <div class="grp-label">System</div>
+      <a href="#architecture">Architecture</a>
+      <a href="#modules">Modules</a>
+      <a href="#data-integration">Live Weather &amp; Locations</a>
+      <div class="grp-label">Engineering</div>
+      <a href="#thermal-model">Thermal Model</a>
+      <a href="#optimization">Optimization Methodology</a>
+      <a href="#database">Database Schema</a>
+      <a href="#api">REST API (target)</a>
+      <div class="grp-label">Project</div>
+      <a href="#deployment">Deployment</a>
+      <a href="#limitations">Limitations &amp; Integrity</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#repo-structure">Repository Layout</a>
+    </nav>
+    <div class="meta">v1.2.0<br/>Updated 2026-09-04</div>
+  </aside>
+
+  <main>
+    <header class="doc-header">
+      <div class="kicker">DRDO Innovation Challenge — Area-Specific Shelter Design</div>
+      <h1>AreaTherm Documentation</h1>
+      <p class="tagline">"Design the shelter for the climate — not the climate for the shelter."</p>
+      <p class="desc">A physics-based decision-support platform that predicts thermal performance
+      and optimizes passive shelter design for a specific location — built for
+      <em>"Software Based Model Development for Design of Area Specific Shelter for Thermal Comfort
+      Maintenance,"</em> initial focus: Ladakh, extensible to any climate.</p>
+      <div class="facts">
+        <span><b>Prototype:</b> HTML/CSS/vanilla JS, zero dependencies</span>
+        <span><b>Live weather:</b> Open-Meteo + NASA POWER (10 locations)</span>
+        <span><b>Target stack:</b> Angular 18 + Spring Boot 3 + MySQL 8</span>
+      </div>
+      <div class="link-row">
+        <a class="link-btn primary" href="https://hasnxin.github.io/AreaTherm/" target="_blank" rel="noopener">▶ Open Live App</a>
+        <a class="link-btn" href="https://github.com/hasnxin/AreaTherm" target="_blank" rel="noopener">Source on GitHub</a>
+      </div>
+    </header>
+
+    <section id="overview">
+      <h2><span class="num">§0</span> Overview</h2>
+      <p class="lede">What AreaTherm is, who it's for, and how this document is organized.</p>
+      <p>AreaTherm turns "design a shelter" from a rule-of-thumb exercise into a modeled,
+      comparable, optimizable decision. A user picks a location, describes a shelter, and the
+      platform runs a real hourly heat-balance simulation, generates and scores dozens of
+      alternative designs, and recommends the one that holds comfort best for that specific
+      climate — with every number traceable back to the formula that produced it.</p>
+      <h4>Primary users</h4>
+      <p>DRDO researchers, agricultural scientists, rural development departments, civil/building
+      engineers, architects, government agencies and NGOs. A <strong>Guided Setup</strong> wizard
+      (§ <a href="#modules">Modules</a>) extends usability to non-technical stakeholders — farmers,
+      cold-region infrastructure developers, rural housing planners — without touching the
+      underlying model.</p>
+      <h4>How to read this document</h4>
+      <p>§1–3 explain <em>what</em> the system does and its shape. §4–7 are the engineering core —
+      the actual physics, optimization math, and data contracts. §8–11 cover where it runs today,
+      what it doesn't do yet, and where it's going.</p>
+    </section>
+
+    <section id="problem">
+      <h2><span class="num">§1</span> Problem Statement</h2>
+      <p class="lede">Why area-specific passive design matters, using Ladakh as the founding case.</p>
+      <p>Ladakh receives roughly <strong>1,900–2,100 kWh/m²/year</strong> of solar irradiance,
+      ~7.9 hours of sunshine per day, and over 300 cloud-free days annually — enormous passive
+      heating potential. Yet after sunset, indoor temperature in most existing shelters collapses
+      toward ambient because of high envelope heat loss, poor insulation, inappropriate material
+      selection, poor orientation, oversized openings, air leakage, and a near-total absence of
+      thermal mass to carry daytime heat into the night.</p>
+      <p>None of these failure modes are location-agnostic — a wall system that performs well in
+      Nagpur's tropical plain can perform terribly in Drass's cold desert, and vice versa. The
+      objective is a software model that predicts and recommends the shelter design best suited
+      to a <em>specific</em> location's climate, rather than applying one generic design everywhere.</p>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart LR
+  A["Traditional approach"] --> B[Build shelter] --> C[Measure temperature] --> D[Add heating / cooling] --> E[Consume energy]
+  F["AreaTherm's approach"] --> G[Understand climate] --> H[Optimize design] --> I[Select materials] --> J[Maximize passive solar gain] --> K[Minimize heat loss] --> L[Use thermal mass] --> M[Maintain comfort passively]
+  style A fill:#c1352e,color:#fff,stroke:none
+  style B fill:#c1352e,color:#fff,stroke:none
+  style C fill:#c1352e,color:#fff,stroke:none
+  style D fill:#c1352e,color:#fff,stroke:none
+  style E fill:#c1352e,color:#fff,stroke:none
+  style F fill:#1a8a4a,color:#fff,stroke:none
+  style G fill:#1a8a4a,color:#fff,stroke:none
+  style H fill:#1a8a4a,color:#fff,stroke:none
+  style I fill:#1a8a4a,color:#fff,stroke:none
+  style J fill:#1a8a4a,color:#fff,stroke:none
+  style K fill:#1a8a4a,color:#fff,stroke:none
+  style L fill:#1a8a4a,color:#fff,stroke:none
+  style M fill:#1a8a4a,color:#fff,stroke:none
+        </pre>
+      </div>
+    </section>
+
+    <section id="workflow">
+      <h2><span class="num">§2</span> Design Workflow</h2>
+      <p class="lede">The pipeline every simulation run passes through, end to end.</p>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TD
+  A[User Input] --> B[Climate + Location Data]
+  B --> C[Shelter Design Parameters]
+  C --> D[Material Database]
+  D --> E[Thermal Model]
+  E --> F[Simulation]
+  F --> G[Multi-Parameter Optimization]
+  G --> H[Recommended Shelter Design]
+  H --> I[Thermal Performance Report]
+        </pre>
+      </div>
+      <p>In the app, this maps to a 15-step user journey: create project → select location → load
+      climate data → define comfort requirement → define geometry → select materials → define
+      openings → add thermal mass → run simulation → view performance → run optimization → compare
+      designs → select recommended design → run what-if analysis → generate report. The
+      <strong>Guided Setup</strong> wizard collapses this into 5 plain-language steps for
+      non-engineers; every advanced screen remains available for full control.</p>
+    </section>
+
+    <section id="architecture">
+      <h2><span class="num">§3</span> Architecture</h2>
+      <p class="lede">What's actually running today, and the production system it's designed to become.</p>
+
+      <div class="callout illustrative">
+        <p><strong>Why a JS prototype, not Angular/Spring Boot:</strong> the development
+        environment has no Java 17+/Maven/Node/npm/Docker toolchain — only a bare Java 8 JRE.
+        Writing Angular/Spring Boot source that cannot be compiled or run there would produce
+        unverifiable scaffolding. Instead, the entire workflow — including the real physics engine
+        and optimizer — runs as a dependency-free client-side app, so every claim in this document
+        is something you can open the live app and check.</p>
+      </div>
+
+      <h3>What's running now</h3>
+      <p>A static HTML/CSS/vanilla-JS single-page app (no build step, no framework, no backend).
+      State persists to the browser's <code>localStorage</code>, field-compatible with the schema
+      in §7 so a future API swap is a data-layer change, not a redesign. Deployed as a static site
+      via GitHub Pages (§8). The sidebar becomes an off-canvas drawer (hamburger toggle) below
+      860px width, so the same deploy works on a phone without a separate mobile build.</p>
+
+      <h3>Target production architecture</h3>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TB
+  subgraph FE["Angular 18+ SPA"]
+    F1["Dashboard · Location/Climate · Shelter Designer<br/>Materials · Simulation · Optimization<br/>What-If · Validation · Reports"]
+  end
+  FE -->|"REST (JSON) + JWT"| BE
+  subgraph BE["Spring Boot 3 — modular monolith"]
+    direction LR
+    B1[api]
+    B2[climate]
+    B3[design]
+    B4[material]
+    B5[thermal]
+    B6[optimization]
+    B7[validation]
+    B8[report]
+    B9[security]
+  end
+  BE --> DB[(MySQL 8)]
+  BE --> RD[(Redis — cache/session)]
+        </pre>
+      </div>
+      <p><strong>Key principle:</strong> the <code>thermal</code> and <code>optimization</code>
+      packages carry zero framework dependencies — pure functions over value objects, unit-testable
+      and reusable from a batch job or an ML trainer. The JS prototype already mirrors this:
+      <code>app/js/engine.js</code> contains no DOM code whatsoever, which is what makes the future
+      port mechanical rather than a rewrite.</p>
+
+      <h4>Prototype → production file mapping</h4>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Prototype file</th><th>Maps to (production)</th></tr></thead>
+        <tbody>
+          <tr><td><code>app/js/engine.js</code></td><td>Spring Boot <code>thermal/</code> + <code>optimization/</code> services</td></tr>
+          <tr><td><code>app/js/weather-api.js</code></td><td><code>climate/</code> package's Open-Meteo adapter (server-side, cached)</td></tr>
+          <tr><td><code>app/js/store.js</code></td><td>JPA repositories / REST client, per <code>DATABASE_SCHEMA.sql</code></td></tr>
+          <tr><td><code>app/js/data.js</code></td><td>Seed data (Flyway migration) + <code>predefined_location</code> table</td></tr>
+          <tr><td><code>app/js/charts.js</code></td><td>Apache ECharts config builders</td></tr>
+          <tr><td><code>app/js/ui-*.js</code>, <code>app.js</code></td><td>Angular components + routing</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="modules">
+      <h2><span class="num">§4</span> Modules</h2>
+      <p class="lede">Every screen in the app, and what it's responsible for.</p>
+      <div class="mod-grid">
+        <div class="mod"><div class="t">Dashboard</div><div class="s">4 primary metrics (comfort score, solar gain, heat loss, avg. indoor temp) with a collapsible "Detailed Analytics" section — simulation history, best design, breakdown.</div></div>
+        <div class="mod"><div class="t">Guided Setup <span class="pill real">non-engineer</span></div><div class="s">5-step wizard: Location → Shelter → Materials → Comfort → Run. Sane presets throughout; shares state with the advanced screens.</div></div>
+        <div class="mod"><div class="t">Location &amp; Climate</div><div class="s">10 reference locations, each loading live Open-Meteo weather + NASA POWER solar/temperature climatology — no hand-authored data anywhere. See §5.</div></div>
+        <div class="mod"><div class="t">Shelter Designer</div><div class="s">Geometry (rectangular/square/circular/dome/semi-circular/L-shape), orientation/azimuth, openings, occupancy — with a live 2D top-down preview and an optional 3D box preview (vanilla Three.js, no build step).</div></div>
+        <div class="mod"><div class="t">Materials</div><div class="s">Editable library across wall/roof/insulation/thermal-mass/window categories; add custom materials, all labelled "engineering database — verify for construction."</div></div>
+        <div class="mod"><div class="t">Thermal Simulation</div><div class="s">Runs the hourly RC model (§6), indoor-vs-ambient-vs-comfort chart, heat-flow breakdown, and per-term "Explain Calculation" panels.</div></div>
+        <div class="mod"><div class="t">Optimization</div><div class="s">Generates ~60 candidate designs, scores them on a configurable weighted formula (§7), ranks top 5, recommends the best, runs sensitivity analysis.</div></div>
+        <div class="mod"><div class="t">What-If Analysis</div><div class="s">Single-parameter before/after comparison (insulation, orientation, window area, thermal mass, roof material).</div></div>
+        <div class="mod"><div class="t">Validation</div><div class="s">Enter measured field data; computes MAE/RMSE/MAPE/R² against the model's prediction and plots measured-vs-predicted.</div></div>
+        <div class="mod"><div class="t">Reports</div><div class="s">Assembles a full engineering report (methodology, assumptions, results, limitations, disclaimer) — print/PDF via the browser.</div></div>
+        <div class="mod"><div class="t">Evaluator Summary</div><div class="s">A 2–3 minute story for a reviewer: location, climate severity, comfort score, recommended design, "why this design."</div></div>
+        <div class="mod"><div class="t">Settings</div><div class="s">Units reference, full assumptions register, project name, session reset.</div></div>
+      </div>
+    </section>
+
+    <section id="data-integration">
+      <h2><span class="num">§5</span> Live Weather &amp; Reference Locations</h2>
+      <p class="lede">How real data gets into the model, and how it's kept honest.</p>
+      <p>Every one of the 10 reference locations gets its climate from three live sources working
+      together — no hand-authored or illustrative climate dataset ships with the app at all — plus
+      custom lat/lon entry for any point on Earth:</p>
+      <div class="callout real">
+        <p><strong>✓ Open-Meteo — drives the simulation.</strong> A live 7-day forecast fetched
+        directly from the browser (CORS-enabled, no API key, no backend needed). The hourly series
+        across those 7 days is bucketed by hour-of-day and averaged into a "typical day" curve,
+        which the thermal model consumes directly — smoothing out any single unusually cloudy or
+        windy day. Source: <code>app/js/weather-api.js</code>.</p>
+      </div>
+      <div class="callout real">
+        <p><strong>✓ NASA POWER — real annual solar/temperature climatology.</strong> A 20-year
+        (2001–2020) climate normal for solar irradiance (GHI, DNI, diffuse) and 2 m air temperature,
+        fetched separately from Open-Meteo. This is what backs the "annual solar potential" figure —
+        a real long-term average, not an extrapolation from the 7-day forecast. Source: <code>app/js/nasa-power.js</code>.</p>
+      </div>
+      <div class="callout real">
+        <p><strong>✓ Open-Meteo Elevation API — real elevation.</strong> SRTM-derived, no key
+        required, fetched independently of weather/climatology so a failure in one source never
+        blocks the others. Source: <code>app/js/elevation.js</code>.</p>
+      </div>
+      <p>Every screen showing climate-derived numbers displays a data-source badge naming exactly
+      which of these produced it. A shared reliability layer (<code>app/js/reliability.js</code>)
+      wraps every one of these calls with a request timeout, capped exponential-backoff retries, a
+      per-source circuit breaker, and a tiered live → fresh-cache → stale-cache fallback — the badge
+      always reflects which tier actually served the number, never silently shown as live.</p>
+
+      <h4>The 10 reference locations</h4>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Location</th><th>Region</th><th>Elevation</th><th>Category</th></tr></thead>
+        <tbody>
+          <tr><td>Leh</td><td>Ladakh (UT)</td><td class="num">3,500 m</td><td>Cold desert</td></tr>
+          <tr><td>Kargil</td><td>Ladakh (UT)</td><td class="num">2,676 m</td><td>Cold desert</td></tr>
+          <tr><td>Drass</td><td>Ladakh (UT)</td><td class="num">3,280 m</td><td>Cold desert</td></tr>
+          <tr><td>Keylong</td><td>Himachal Pradesh</td><td class="num">3,170 m</td><td>High Himalaya</td></tr>
+          <tr><td>Munsiyari</td><td>Uttarakhand</td><td class="num">2,298 m</td><td>High Himalaya</td></tr>
+          <tr><td>Shimla</td><td>Himachal Pradesh</td><td class="num">2,159 m</td><td>Mid Himalaya</td></tr>
+          <tr><td>Srinagar</td><td>Jammu &amp; Kashmir (UT)</td><td class="num">1,730 m</td><td>Temperate valley</td></tr>
+          <tr><td>Pune</td><td>Maharashtra</td><td class="num">625 m</td><td>Tropical plateau</td></tr>
+          <tr><td>Nagpur</td><td>Maharashtra</td><td class="num">310 m</td><td>Tropical plain</td></tr>
+          <tr><td>Bareilly</td><td>Uttar Pradesh</td><td class="num">168 m</td><td>Gangetic plain</td></tr>
+        </tbody>
+      </table></div>
+      <p class="lede" style="margin-top:14px;">Adding an 11th location is a one-line addition to
+      <code>DATA.PREDEFINED_LOCATIONS</code> in <code>app/js/data.js</code> — live weather works
+      immediately for any latitude/longitude on Earth.</p>
+    </section>
+
+    <section id="thermal-model">
+      <h2><span class="num">§6</span> Thermal Model</h2>
+      <p class="lede">The physics — transparent by design, reproducible in-app via "Explain Calculation" on every number.</p>
+      <p>A single-zone, <strong>two-node lumped-capacitance (RC) network</strong>, solved by
+      implicit (backward-Euler) time-stepping at 15/30/60-minute resolution. Two temperature nodes
+      — indoor air (<code>T_air</code>) and thermal mass (<code>T_mass</code>) — make the
+      charge/discharge behaviour of thermal mass visible rather than hand-waved. Backward-Euler
+      is unconditionally stable, which matters here because indoor-air capacitance is small
+      relative to hourly heat-flow magnitudes — explicit Euler diverges on this system.</p>
+
+      <h4>6.1 — Sol-air temperature (opaque surfaces)</h4>
+      <div class="formula">T_sol-air(t) = T_amb(t) + (α_surface × G_surface(t)) / h_o<br/>
+      <span class="comment">// α = solar absorptivity · G = irradiance on that surface · h_o = outside film coeff. (23 W/m²K, wind-adjusted)</span></div>
+      <p>Folds opaque-surface solar gain into the conduction term — standard ASHRAE sol-air
+      practice. Longwave sky-radiation correction is omitted (disclosed assumption).</p>
+
+      <h4>6.2 — Conduction losses/gains</h4>
+      <div class="formula">Q_wall  = U_wall  × A_wall  × (T_air − T_sol-air,wall)<br/>
+      Q_roof  = U_roof  × A_roof  × (T_air − T_sol-air,roof)<br/>
+      Q_floor = U_floor × A_floor × (T_air − T_ground)<br/>
+      Q_window,cond = U_window × A_window × (T_air − T_amb)</div>
+
+      <h4>6.3 — Solar heat gain through glazing</h4>
+      <div class="formula">Q_solar,window = Σ_windows A_window × G × orientation_factor × SHGC</div>
+
+      <h4>6.4 — Ventilation / infiltration</h4>
+      <div class="formula">Q_vent = ACH × Volume / 3600 × ρ_air × Cp_air × (T_air − T_amb)<br/>
+      <span class="comment">// ρ_air = 1.2 kg/m³ · Cp_air = 1005 J/kg·K</span></div>
+
+      <h4>6.5 — Orientation factor</h4>
+      <p>A piecewise table over angle from due south (documented assumption, user-editable):
+      South 1.00 · SE/SW 0.85 · East/West 0.55 · NE/NW 0.30 · North 0.15 — interpolated linearly,
+      or computed from a true azimuth when a custom angle is entered.</p>
+
+      <h4>6.6 — Thermal mass node</h4>
+      <div class="formula">Q_exchange = h_mass × A_mass × (T_air − T_mass)<br/>
+      C_mass × dT_mass/dt = Q_exchange + f_solar_to_mass × Q_solar,window<br/>
+      <span class="comment">// C_mass = mass × Cp_material · PCM uses an elevated apparent Cp over its melt band</span></div>
+
+      <h4>6.7 — Indoor air energy balance</h4>
+      <div class="formula">C_air × ΔT_air/Δt = Q_solar,window + Q_internal − Q_exchange<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;− Q_wall − Q_roof − Q_floor − Q_window,cond − Q_vent<br/>
+      <span class="comment">// C_air = Volume × ρ_air × Cp_air</span></div>
+
+      <h4>6.8 — Derived outputs</h4>
+      <ul>
+        <li><strong>Comfort hours</strong> — count of timesteps with <code>comfort_min ≤ T_air ≤ comfort_max</code></li>
+        <li><strong>Heating/cooling requirement</strong> — auxiliary energy that would hold comfort during out-of-band hours</li>
+        <li><strong>Solar utilization %</strong> — share of solar energy striking the glazing aperture that is actually transmitted (bounded well under 100% by construction — not a gain-vs-loss ratio, which would saturate)</li>
+        <li><strong>Heat retention %</strong> — gains (solar + internal + net mass release) as a share of total losses</li>
+        <li><strong>Thermal Comfort Score (0–100)</strong> — 0.45×comfort + 0.25×retention + 0.20×solar-utilization + 0.10×energy-adequacy</li>
+      </ul>
+      <p>Every formula above is re-printed with the run's actual substituted numbers in the
+      in-app "Explain Calculation" panel for that term — nothing is a black box.</p>
+    </section>
+
+    <section id="optimization">
+      <h2><span class="num">§7</span> Optimization Methodology</h2>
+      <p class="lede">A weighted multi-criteria search over a sampled design space — not a black-box recommendation.</p>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TD
+  A["Baseline design + variable ranges"] --> B["Candidate generator<br/>(orientation × wall system × insulation × window % × glazing × thermal mass)"]
+  B --> C["Thermal engine run per candidate (§6)"]
+  C --> D["Weighted multi-criteria score"]
+  D --> E["Rank -> Top 5 (Design A-E)"]
+  E --> F["Sensitivity analysis:<br/>perturb one parameter, measure Δ score"]
+        </pre>
+      </div>
+      <h4>Default weights (user-adjustable, live)</h4>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Criterion</th><th>Default weight</th><th>What it measures</th></tr></thead>
+        <tbody>
+          <tr><td>Thermal Comfort</td><td class="num">40%</td><td>Comfort-band hours, day + night</td></tr>
+          <tr><td>Heat Retention</td><td class="num">25%</td><td>Gains as a share of total losses</td></tr>
+          <tr><td>Solar Utilization</td><td class="num">15%</td><td>Transmitted vs. incident solar on glazing</td></tr>
+          <tr><td>Energy Efficiency</td><td class="num">10%</td><td>Auxiliary heating/cooling demand, normalized across the candidate batch</td></tr>
+          <tr><td>Cost</td><td class="num">10%</td><td>Materials-based cost estimate, normalized across the candidate batch</td></tr>
+        </tbody>
+      </table></div>
+      <p>~60 candidates are evaluated per run (sampled across orientation × insulation thickness ×
+      window % × glazing type × thermal-mass level). An optional ML surrogate layer is architected
+      but not built — no labelled field data exists yet to train or validate one, and the brief
+      explicitly prohibits claiming ML accuracy without validation data.</p>
+    </section>
+
+    <section id="database">
+      <h2><span class="num">§8</span> Database Schema (production target)</h2>
+      <p class="lede">MySQL 8 schema the Spring Boot backend would run against — not deployed in this environment (no MySQL/Docker here).</p>
+      <p>Sixteen entities, matching the brief's data-architecture requirement one-for-one:
+      <code>app_user</code>, <code>project</code>, <code>location</code>,
+      <code>predefined_location</code>, <code>climate_profile</code> (+ <code>climate_profile_hourly</code>
+      time series), <code>comfort_profile</code>, <code>material</code>, <code>shelter_design</code>,
+      <code>opening</code>, <code>thermal_mass</code>, <code>simulation</code> (+
+      <code>simulation_result</code> time series), <code>optimization_run</code>,
+      <code>design_candidate</code>, <code>validation_dataset</code> (+
+      <code>validation_dataset_point</code>), <code>report</code>, <code>audit_log</code>.</p>
+      <p>Every <code>climate_profile</code> row carries <code>data_source</code>,
+      <code>api_source</code>, <code>data_validation_status</code> (<code>REAL</code> |
+      <code>ILLUSTRATIVE</code>), and <code>last_fetched</code> — the exact fields the frontend's
+      data-source badge (§5) reads from, so the transparency guarantee holds all the way down to
+      the database, not just the UI layer.</p>
+      <div class="code-label"><span>climate_profile — the core transparency-tracking table</span></div>
+      <div class="code-wrap"><pre>CREATE TABLE climate_profile (
+  id                 BIGINT AUTO_INCREMENT PRIMARY KEY,
+  location_id        BIGINT NOT NULL REFERENCES location(id),
+  source             ENUM('DEMO_ILLUSTRATIVE','USER_PROVIDED','OPEN_METEO',
+                          'NASA_POWER','ERA5','IMD') NOT NULL,
+  data_source        VARCHAR(50) NOT NULL DEFAULT 'DEMO',
+  api_source         VARCHAR(50),
+  data_validation_status ENUM('REAL','ILLUSTRATIVE') NOT NULL DEFAULT 'ILLUSTRATIVE',
+  last_fetched       DATETIME,
+  version            VARCHAR(50) NOT NULL,
+  is_illustrative    BOOLEAN NOT NULL DEFAULT TRUE,
+  ambient_temp_min_c DECIMAL(5,2),
+  ambient_temp_max_c DECIMAL(5,2),
+  solar_irradiance_kwh_m2_yr DECIMAL(7,2),
+  sunshine_hours_per_day     DECIMAL(4,2),
+  avg_wind_speed_ms          DECIMAL(5,2),
+  avg_relative_humidity_pct  DECIMAL(5,2),
+  avg_cloud_cover_pct        DECIMAL(5,2),
+  created_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);</pre></div>
+      <p>Full DDL for all 16 tables lives in <code>DATABASE_SCHEMA.sql</code> at the repo root.</p>
+    </section>
+
+    <section id="api">
+      <h2><span class="num">§9</span> REST API (production target)</h2>
+      <p class="lede">The contract a Spring Boot backend should expose — the prototype calls the equivalent logic as JS functions today.</p>
+      <p>Base path <code>/api/v1</code>, JWT bearer auth, JSON bodies. Every response distinguishes
+      <code>source</code>: <code>USER_INPUT</code> | <code>MODEL_ASSUMPTION</code> |
+      <code>CALCULATED_RESULT</code> | <code>FIELD_MEASUREMENT</code> | <code>REAL_LIVE_FETCH</code>.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Method &amp; path</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /locations</code></td><td>List saved locations for the current project</td></tr>
+          <tr><td><code>GET /climate-profiles/live?locationId=</code></td><td>Fetch/refresh a location's live Open-Meteo weather + NASA POWER climatology, server-side cached (5–7 day TTL)</td></tr>
+          <tr><td><code>POST /climate-profiles</code></td><td>Create a user-provided or live-fetched climate profile (+ hourly series)</td></tr>
+          <tr><td><code>GET/POST /projects/{id}/shelter-designs</code></td><td>List / create shelter designs</td></tr>
+          <tr><td><code>GET /materials?category=WALL|ROOF|...</code></td><td>Material library, filterable by category</td></tr>
+          <tr><td><code>POST /simulations</code></td><td>Queue a thermal simulation run → <code>202 Accepted</code></td></tr>
+          <tr><td><code>GET /simulations/{id}/explain?term=wall|solar|...</code></td><td>Formula + substituted values for one heat-flow term</td></tr>
+          <tr><td><code>POST /optimization-runs</code></td><td>Run candidate generation + weighted scoring</td></tr>
+          <tr><td><code>GET /optimization-runs/{id}/sensitivity</code></td><td>Ranked parameter-impact list</td></tr>
+          <tr><td><code>POST /validation-datasets</code></td><td>Submit measured field points for MAE/RMSE/MAPE/R²</td></tr>
+          <tr><td><code>POST /reports</code></td><td>Generate a PDF report (server-side, e.g. OpenPDF)</td></tr>
+        </tbody>
+      </table></div>
+      <p>Full endpoint list, request/response shapes, and conventions are in <code>API_SPEC.md</code>.</p>
+    </section>
+
+    <section id="deployment">
+      <h2><span class="num">§10</span> Deployment</h2>
+      <p class="lede">Where this actually runs, right now.</p>
+      <p>The prototype is a static site — no server-side logic, no database, and (because
+      Open-Meteo is CORS-enabled) no backend proxy needed even for live weather. It's deployed to
+      <strong>GitHub Pages</strong> via a GitHub Actions workflow (<code>.github/workflows/pages.yml</code>)
+      that publishes the <code>app/</code> folder on every push to <code>main</code>.</p>
+      <div class="link-row">
+        <a class="link-btn primary" href="https://hasnxin.github.io/AreaTherm/" target="_blank" rel="noopener">Live site ↗</a>
+        <a class="link-btn" href="https://github.com/hasnxin/AreaTherm" target="_blank" rel="noopener">GitHub repo ↗</a>
+      </div>
+      <h4>Run it locally</h4>
+      <div class="code-wrap"><pre>python -m http.server 8743 --directory app
+# then open http://localhost:8743</pre></div>
+      <p>No build step — <code>app/index.html</code> also opens directly via <code>file://</code>
+      in most browsers.</p>
+    </section>
+
+    <section id="limitations">
+      <h2><span class="num">§11</span> Limitations &amp; Scientific Integrity</h2>
+      <p class="lede">What this platform does not claim, and the assumptions it discloses.</p>
+      <div class="callout illustrative">
+        <p><strong>Never fabricated:</strong> experimental measurements, DRDO validation,
+        material test results, weather observations passed off as field data, accuracy
+        percentages, energy or cost savings. Every number on screen is labelled as one of:
+        input data, model assumption, calculated result, or (where user-supplied) field
+        measurement — never blurred together.</p>
+      </div>
+      <h4>Not yet implemented</h4>
+      <ul>
+        <li>Authentication / RBAC persistence, multi-user shared database (state is per-browser <code>localStorage</code> today, with multiple named projects and offline app-shell caching via a service worker)</li>
+        <li>ERA5/IMD archive integration — NASA POWER covers solar/temperature climatology and Open-Meteo's Elevation API covers real elevation; other historical variables (precipitation, detailed wind climatology) would need these</li>
+        <li>The 3D shelter preview is an illustrative box approximation — it doesn't yet model curved or L-shaped footprints, and door/window placement isn't tied to the per-face data model used elsewhere</li>
+        <li>Server-side PDF rendering (browser print-to-PDF instead)</li>
+        <li>ML surrogate model (architected in the source ARCHITECTURE.md, not trained — no labelled field data exists)</li>
+        <li>The Imperial/metric toggle is display-only — the engine and every calculation stay metric internally</li>
+      </ul>
+      <h4>Disclosed modeling assumptions</h4>
+      <p>Transient (hourly RC), not steady-state. Outside film coefficient fixed at 23 W/m²K,
+      wind-adjusted infiltration. Sky longwave radiation folded into the sol-air simplification.
+      Ground temperature defaults to seasonal mean ambient unless overridden. Internal gains
+      constant-per-hour unless an occupancy schedule is supplied. PCM modelled via elevated
+      apparent specific heat over its melt band, not full enthalpy method.</p>
+    </section>
+
+    <section id="roadmap">
+      <h2><span class="num">§12</span> Roadmap</h2>
+      <p class="lede">The path from this prototype to the full production system.</p>
+      <ol>
+        <li>Stand up the Spring Boot/MySQL backend against <code>DATABASE_SCHEMA.sql</code> and
+        <code>API_SPEC.md</code>; port <code>engine.js</code> to a Java <code>thermal</code> service
+        — largely a language port, not a redesign, since it's already framework-free.</li>
+        <li>Wire an Angular frontend to that API in place of <code>store.js</code>.</li>
+        <li>Instrument a pilot shelter in Leh or Kargil and feed real readings into the Validation
+        module to get an actual MAE/RMSE against the model.</li>
+        <li>Add ERA5 / IMD archive adapters behind the existing <code>ClimateProfile</code>
+        abstraction, for historical variables beyond what NASA POWER's climatology already covers.</li>
+        <li>Train an ML surrogate once enough simulation + field-validation data exists, kept
+        clearly labelled "ML-based estimation" and never merged with physics-model results.</li>
+      </ol>
+    </section>
+
+    <section id="repo-structure">
+      <h2><span class="num">§13</span> Repository Layout</h2>
+      <div class="tree">AreaTherm/<br/>
+&nbsp;&nbsp;README.md <span class="c">— quick start, what's real vs illustrative</span><br/>
+&nbsp;&nbsp;ARCHITECTURE.md <span class="c">— full detail behind §3, §6, §7 above</span><br/>
+&nbsp;&nbsp;DATABASE_SCHEMA.sql <span class="c">— full DDL for §8</span><br/>
+&nbsp;&nbsp;API_SPEC.md <span class="c">— full endpoint list for §9</span><br/>
+&nbsp;&nbsp;.github/workflows/pages.yml <span class="c">— GitHub Pages deploy</span><br/>
+&nbsp;&nbsp;app/ <span class="c">— the running prototype (deployed as-is)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;index.html<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;css/styles.css<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/config.js <span class="c">— branding, units, default weights, reliability tuning</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/data.js <span class="c">— locations, materials, comfort profiles (no climate data)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/reliability.js <span class="c">— timeout/retry/circuit-breaker/cache, shared by every API client</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/weather-api.js <span class="c">— Open-Meteo client (§5)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/nasa-power.js <span class="c">— NASA POWER climatology client (§5)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/elevation.js <span class="c">— Open-Meteo Elevation API client (§5)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/engine.js <span class="c">— thermal model + occupancy heat model + optimizer (§6, §7)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/charts.js <span class="c">— inline-SVG chart renderer</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/export.js <span class="c">— dependency-free CSV export</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/validator.js <span class="c">— real-data validation against the simulation</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/shelter3d.js <span class="c">— optional 3D shelter preview (Three.js via import map)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/store.js <span class="c">— app state, schema-compatible</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;js/util.js, ui-1.js, ui-2.js, ui-3.js, app.js <span class="c">— screens + router</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;sw.js <span class="c">— app-shell service worker (offline HTML/CSS/JS caching, never climate data)</span><br/>
+&nbsp;&nbsp;artifact/ <span class="c">— bundled single-file snapshots for sharing</span></div>
+    </section>
+
+    <div class="foot">AreaTherm Documentation · v1.1.0 · Generated 2026-09-04 · Model version thermal-engine v1.0.0</div>
+  </main>
+</div>
+
+<script>
+(function(){
+  var links = Array.prototype.slice.call(document.querySelectorAll('#tocNav a'));
+  var sections = links.map(function(a){ return document.querySelector(a.getAttribute('href')); });
+  function onScroll(){
+    var pos = window.scrollY + 120;
+    var current = sections[0];
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i] && sections[i].offsetTop <= pos) current = sections[i];
+    }
+    links.forEach(function(a){
+      a.classList.toggle('current', current && a.getAttribute('href') === '#' + current.id);
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+</script>
