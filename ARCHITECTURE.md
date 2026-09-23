@@ -15,12 +15,12 @@ early risks becoming an *unverifiable* mockup — exactly what the brief
 prohibits ("Do NOT build only a calculator" / "not a superficial UI
 mockup").
 
-**Decision**: Phase 1 of this prototype is a self-contained, dependency-free
+**Decision**: Phase 1 of this prototype was a self-contained, dependency-free
 web application (plain HTML/CSS/JS, no build step, no external services)
 that implements the *entire* workflow — including the real physics engine
-and the real multi-parameter optimizer — client-side. It runs by opening
-`app/index.html` in any browser. This is not a wireframe: every number shown
-is computed by the same equations documented in §4 below.
+and the real multi-parameter optimizer — client-side. This is not a
+wireframe: every number shown is computed by the same equations documented
+in §4 below.
 
 Section 1 below is the target production architecture. The prototype's code
 is deliberately organized (see §6, file layout) so each JS module maps onto
@@ -33,10 +33,15 @@ mechanical rather than a redesign.
 `thermal/`/`optimization/` there are a numerically-verified, zero-framework
 port of this document's §3-4 and `app/js/engine.js`, checked against real
 captured output from this exact prototype (golden-file tests, not just unit
-tests). Infrastructure only so far: no LLM is wired up anywhere in it (see
-§9 and `backend/`'s `ml/` package), and the frontend above still runs
-standalone against its own in-browser physics engine — the two haven't been
-connected yet.
+tests). The frontend above is now wired to it and **requires it to be
+running** — auth, persistence, and every official simulation/optimization
+run go through the real backend API; only instant/interactive feedback that
+was never an official result (live preview while editing, What-If,
+Sensitivity Analysis, Explain Calculation) still computes client-side, for
+the reasons given in the root `README.md`'s "Known limitations" section. No
+LLM is wired up anywhere yet (see §9 and `backend/`'s `ml/` package), and
+the Angular rewrite mentioned in §1 hasn't happened — this vanilla-JS
+frontend talks to the production backend directly in the meantime.
 
 ---
 

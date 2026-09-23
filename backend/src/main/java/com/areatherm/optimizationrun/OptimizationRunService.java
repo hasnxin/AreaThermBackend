@@ -3,9 +3,14 @@ package com.areatherm.optimizationrun;
 import com.areatherm.climate.ClimateProfile;
 import com.areatherm.climate.ClimateProfileRepository;
 import com.areatherm.climate.ClimateProfileService;
+import com.areatherm.design.Opening;
+import com.areatherm.design.OpeningRepository;
 import com.areatherm.design.ShelterDesign;
 import com.areatherm.design.ShelterDesignRepository;
 import com.areatherm.design.ShelterDesignService;
+import com.areatherm.design.ThermalMass;
+import com.areatherm.design.ThermalMassRepository;
+import com.areatherm.material.Material;
 import com.areatherm.material.MaterialLibraryService;
 import com.areatherm.ml.SurrogatePredictor;
 import com.areatherm.optimization.OptimizationEngine;
@@ -14,6 +19,7 @@ import com.areatherm.optimization.model.OptimizationResult;
 import com.areatherm.optimization.model.Weights;
 import com.areatherm.project.Project;
 import com.areatherm.project.ProjectRepository;
+import com.areatherm.thermal.ThermalEngine;
 import com.areatherm.thermal.model.Design;
 import com.areatherm.thermal.model.SimConfig;
 import org.slf4j.Logger;
@@ -23,8 +29,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Orchestrates an optimization run: loads the base design/climate profile,
@@ -43,6 +52,8 @@ public class OptimizationRunService {
     private final OptimizationRunRepository optimizationRunRepository;
     private final DesignCandidateRepository designCandidateRepository;
     private final ShelterDesignRepository shelterDesignRepository;
+    private final OpeningRepository openingRepository;
+    private final ThermalMassRepository thermalMassRepository;
     private final ClimateProfileRepository climateProfileRepository;
     private final ProjectRepository projectRepository;
     private final ShelterDesignService shelterDesignService;
@@ -53,6 +64,8 @@ public class OptimizationRunService {
     public OptimizationRunService(OptimizationRunRepository optimizationRunRepository,
                                    DesignCandidateRepository designCandidateRepository,
                                    ShelterDesignRepository shelterDesignRepository,
+                                   OpeningRepository openingRepository,
+                                   ThermalMassRepository thermalMassRepository,
                                    ClimateProfileRepository climateProfileRepository,
                                    ProjectRepository projectRepository,
                                    ShelterDesignService shelterDesignService,
@@ -62,6 +75,8 @@ public class OptimizationRunService {
         this.optimizationRunRepository = optimizationRunRepository;
         this.designCandidateRepository = designCandidateRepository;
         this.shelterDesignRepository = shelterDesignRepository;
+        this.openingRepository = openingRepository;
+        this.thermalMassRepository = thermalMassRepository;
         this.climateProfileRepository = climateProfileRepository;
         this.projectRepository = projectRepository;
         this.shelterDesignService = shelterDesignService;
@@ -192,5 +207,94 @@ public class OptimizationRunService {
 
     public List<DesignCandidate> getCandidates(Long optimizationRunId) {
         return designCandidateRepository.findByOptimizationRunIdOrderByLabelAsc(optimizationRunId);
+    }
+
+    /**
+     * Bulk-computes a lightweight design summary (material slugs, orientation,
+     * insulation thickness, window area/percentage, thermal mass) for every
+     * candidate in {@code candidates}, keyed by DesignCandidate id -- e.g. for
+     * a run's full ~567-candidate {@code all} list in the API response.
+     * Deliberately NOT one repository call per candidate: the underlying
+     * ShelterDesign rows (with materials), Opening rows (with glazing) and
+     * ThermalMass rows are each fetched in a single batched query keyed on
+     * the full id list, then joined in memory.
+     * <p>
+     * Re-fetches the OptimizationRun by id (rather than taking the entity a
+     * caller may already hold) specifically so {@code run.getBaseShelterDesign()}
+     * is a lazy association bound to THIS method's own transaction --
+     * a detached run's association would still be tied to whatever
+     * (possibly already-closed) session first loaded it.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, DesignCandidateSummary> getDesignSummaries(Long optimizationRunId, List<DesignCandidate> candidates) {
+        if (candidates.isEmpty()) {
+            return Map.of();
+        }
+        OptimizationRun run = optimizationRunRepository.findById(optimizationRunId)
+            .orElseThrow(() -> new IllegalArgumentException("Unknown optimization run: " + optimizationRunId));
+
+        List<Long> designIds = candidates.stream().map(c -> c.getShelterDesign().getId()).distinct().toList();
+
+        Map<Long, ShelterDesign> designsById = shelterDesignRepository.findByIdInWithMaterials(designIds).stream()
+            .collect(Collectors.toMap(ShelterDesign::getId, d -> d));
+        Map<Long, List<Opening>> openingsByDesignId = openingRepository.findByShelterDesignIdInWithGlazing(designIds).stream()
+            .collect(Collectors.groupingBy(o -> o.getShelterDesign().getId()));
+        Map<Long, ThermalMass> thermalMassByDesignId = thermalMassRepository.findByShelterDesignIdIn(designIds).stream()
+            .collect(Collectors.toMap(tm -> tm.getShelterDesign().getId(), tm -> tm));
+
+        // Every candidate in a run shares the base design's shape/dimensions
+        // -- OptimizationEngine.buildCandidate only ever varies wall/roof
+        // material, orientation, windows and mass, never shape or dimensions
+        // -- so total wall area is identical across all of a run's
+        // candidates and only needs computing once, from the base design,
+        // rather than per candidate.
+        Double wallAreaM2 = run.getBaseShelterDesign() != null
+            ? ThermalEngine.computeGeometry(shelterDesignService.toDesign(run.getBaseShelterDesign())).wallArea()
+            : null;
+
+        Map<Long, DesignCandidateSummary> result = new HashMap<>();
+        for (DesignCandidate c : candidates) {
+            Long designId = c.getShelterDesign().getId();
+            ShelterDesign design = designsById.get(designId);
+            if (design == null) {
+                continue;
+            }
+            List<Opening> openings = openingsByDesignId.getOrDefault(designId, List.of());
+            ThermalMass thermalMass = thermalMassByDesignId.get(designId);
+            result.put(c.getId(), buildDesignSummary(design, openings, thermalMass, wallAreaM2));
+        }
+        return result;
+    }
+
+    private static DesignCandidateSummary buildDesignSummary(ShelterDesign design, List<Opening> openings,
+                                                               ThermalMass thermalMass, Double wallAreaM2) {
+        List<Opening> windows = openings.stream().filter(o -> o.getOpeningType() == Opening.OpeningType.WINDOW).toList();
+        BigDecimal windowAreaM2 = windows.stream()
+            .map(o -> o.getAreaEachM2().multiply(BigDecimal.valueOf(o.getCount())))
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        int windowCount = windows.stream().mapToInt(Opening::getCount).sum();
+        String glazingSlug = windows.stream()
+            .map(Opening::getGlazingMaterial)
+            .filter(m -> m != null)
+            .map(Material::getSlug)
+            .findFirst().orElse(null);
+        Double windowPercentOfWallArea = (wallAreaM2 != null && wallAreaM2 > 0)
+            ? windowAreaM2.doubleValue() / wallAreaM2 : null;
+
+        return new DesignCandidateSummary(
+            design.getWallMaterial() != null ? design.getWallMaterial().getSlug() : null,
+            design.getRoofMaterial() != null ? design.getRoofMaterial().getSlug() : null,
+            design.getWallInsulationMaterial() != null ? design.getWallInsulationMaterial().getSlug() : null,
+            design.getWallInsulationThicknessMm(),
+            design.getRoofInsulationMaterial() != null ? design.getRoofInsulationMaterial().getSlug() : null,
+            design.getRoofInsulationThicknessMm(),
+            glazingSlug,
+            design.getOrientation() != null ? design.getOrientation().name() : null,
+            windowAreaM2,
+            windowPercentOfWallArea,
+            windowCount,
+            thermalMass != null ? thermalMass.getMassKg() : null,
+            thermalMass != null && thermalMass.getMaterial() != null ? thermalMass.getMaterial().getSlug() : null
+        );
     }
 }

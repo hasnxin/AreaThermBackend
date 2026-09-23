@@ -10,6 +10,8 @@ public interface ShelterDesignRepository extends JpaRepository<ShelterDesign, Lo
 
     List<ShelterDesign> findByProjectId(Long projectId);
 
+    boolean existsByProjectId(Long projectId);
+
     /**
      * Lightweight row for a project's shelter-design list view. Resolves the
      * wall material's name in the same query instead of leaving
@@ -40,6 +42,26 @@ public interface ShelterDesignRepository extends JpaRepository<ShelterDesign, Lo
                     + "left join d.floorMaterial fm "
                     + "where d.id = :id")
     Optional<ShelterDesignMaterialsSummary> findMaterialsSummaryById(@Param("id") Long id);
+
+    /**
+     * Bulk fetch across many designs (e.g. an optimization run's ~567
+     * candidates) in one query, with wall/roof/wall-insulation/roof-
+     * insulation materials eagerly joined so a caller reading those
+     * associations for every returned design never N+1's -- one query
+     * total regardless of how many ids are passed. Opening and ThermalMass
+     * child rows are a separate 1:many / 1:0..1 relationship each, so they
+     * are batch-fetched separately (see OpeningRepository#findByShelterDesignIdInWithGlazing,
+     * ThermalMassRepository#findByShelterDesignIdIn) rather than folded into
+     * this same query, which would otherwise multiply rows per opening.
+     */
+    @Query(
+            "select d from ShelterDesign d "
+                    + "left join fetch d.wallMaterial "
+                    + "left join fetch d.roofMaterial "
+                    + "left join fetch d.wallInsulationMaterial "
+                    + "left join fetch d.roofInsulationMaterial "
+                    + "where d.id in :ids")
+    List<ShelterDesign> findByIdInWithMaterials(@Param("ids") List<Long> ids);
 }
 
 /**

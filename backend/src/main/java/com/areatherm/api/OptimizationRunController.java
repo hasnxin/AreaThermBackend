@@ -5,6 +5,7 @@ import com.areatherm.api.dto.DesignCandidateResponse;
 import com.areatherm.optimization.OptimizationEngine;
 import com.areatherm.optimization.model.Weights;
 import com.areatherm.optimizationrun.DesignCandidate;
+import com.areatherm.optimizationrun.DesignCandidateSummary;
 import com.areatherm.optimizationrun.OptimizationRun;
 import com.areatherm.optimizationrun.OptimizationRunService;
 import com.areatherm.simulation.PeriodTypeConverter;
@@ -57,8 +58,10 @@ public class OptimizationRunController {
     public Map<String, Object> get(@PathVariable Long id) {
         OptimizationRun run = optimizationRunService.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No optimization run with id " + id));
-        List<DesignCandidateResponse> candidates = optimizationRunService.getCandidates(id).stream()
-            .map(DesignCandidateResponse::from).toList();
+        List<DesignCandidate> candidateEntities = optimizationRunService.getCandidates(id);
+        Map<Long, DesignCandidateSummary> summaries = optimizationRunService.getDesignSummaries(id, candidateEntities);
+        List<DesignCandidateResponse> candidates = candidateEntities.stream()
+            .map(c -> DesignCandidateResponse.from(c, summaries.get(c.getId()))).toList();
         List<DesignCandidateResponse> top = candidates.stream()
             .filter(c -> c.label() != null && c.label().length() == 1 && Character.isUpperCase(c.label().charAt(0)))
             .toList();

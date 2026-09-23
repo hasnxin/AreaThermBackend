@@ -238,6 +238,7 @@ Thermal Comfort Score = ${sc.thermalComfortScore} / 100</pre>
           </div>
           <div class="form-row" style="align-self:flex-end;"><button class="btn btn-accent" id="runSimBtn">▶ Run Thermal Simulation</button></div>
         </div>
+        <div id="simRunStatus" class="hint"></div>
         <div id="simValidationErrors" hidden></div>
       </div>
 
@@ -336,11 +337,16 @@ Thermal Comfort Score = ${sc.thermalComfortScore} / 100</pre>
       CH.stackedHourlyChart(U.qs("#stackedHeatFlow", root), buildHourlyBuckets(result.series), { yLabel: "W" });
       CH.stackedHeatBalanceChart(U.qs("#heatFlowDiv", root), result.daily);
       CH.scoreGauge(U.qs("#simGauge", root), result.scores.thermalComfortScore);
-      wireExplainButtons(root, result, s.design, season);
+      // Explain Calculation needs per-step fields the backend doesn't
+      // persist (raw solar irradiance, separate window/door conduction) —
+      // recomputed locally once on the exact inputs that produced this
+      // official result (same verified engine, not a competing answer),
+      // purely so the modal's narration has the richer detail to read.
+      wireExplainButtons(root, window.APP_ADAPTER.explainLocalRecompute(s) || result, s.design, season);
       U.on("#downloadTempChartBtn", "click", () => CH.downloadChartPng(U.qs("#tempChart", root), "areatherm_temperature_chart.png"), root);
     }
 
-    U.on("#runSimBtn", "click", () => {
+    U.on("#runSimBtn", "click", async () => {
       const check = window.APP_VALIDATOR.validateDesign(STORE.get());
       if (!check.valid) {
         U.showValidationErrors(root, "#simValidationErrors", check.errors);
@@ -352,13 +358,20 @@ Thermal Comfort Score = ${sc.thermalComfortScore} / 100</pre>
       const periodType = U.qs("#simPeriod", root).value;
       const days = periodType === "24H" ? 1 : periodType === "7D" ? 7 : 30;
       STORE.get().simConfig = { timeStepMinutes, periodType, days };
+      const btn = U.qs("#runSimBtn", root);
+      const statusEl = U.qs("#simRunStatus", root);
+      btn.disabled = true;
+      btn.classList.add("is-loading");
       try {
-        const res = ENGINE.runSimulation(STORE.get().design, season, STORE.get().simConfig);
+        const res = await window.APP_ADAPTER.runOfficialSimulation(STORE.get(), (msg) => { if (statusEl) statusEl.textContent = msg; });
         STORE.recordSimulation(res);
         window.APP.render();
         window.APP.toast("Simulation complete.");
       } catch (e) {
+        if (statusEl) statusEl.textContent = "";
         U.showValidationErrors(root, "#simValidationErrors", [{ field: null, message: "Simulation failed: " + e.message }]);
+        btn.disabled = false;
+        btn.classList.remove("is-loading");
       }
     }, root);
   };
@@ -430,14 +443,13 @@ Thermal Comfort Score = ${sc.thermalComfortScore} / 100</pre>
         <div id="weightTotal" class="hint"></div>
         <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
           <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; cursor:pointer;">
-            <input type="checkbox" id="broaderSearchToggle" style="width:auto;" ${window.APP_ML && window.APP_ML.isAvailable() ? "checked" : "disabled"}>
+            <input type="checkbox" id="broaderSearchToggle" style="width:auto;" disabled>
             Broader search (ML-screened)
           </label>
-          <p class="hint" style="margin:4px 0 0 24px;">${window.APP_ML && window.APP_ML.isAvailable()
-            ? "Screens ~10,000 combinations with a fast ML surrogate first, then verifies the best 400 with the real physics engine — every shown result is still a real simulation. Untick to use the pure-physics grid only."
-            : "ML surrogate model not loaded — using the pure-physics grid search."}</p>
+          <p class="hint" style="margin:4px 0 0 24px;">Optimization now runs on the server, which evaluates the full deterministic physics grid (567 candidates) — no ML surrogate is wired up there yet (infrastructure-only stub, see backend/README.md), so this option is unavailable for now.</p>
         </div>
         <button class="btn btn-accent" id="runOptBtn" style="margin-top:10px;">▶ Run Design Optimization</button>
+        <div id="optRunStatus" class="hint"></div>
         <div id="optValidationErrors" hidden></div>
       </div>
 
@@ -591,7 +603,7 @@ Thermal Comfort Score = ${sc.thermalComfortScore} / 100</pre>
       }, root);
     }
 
-    U.on("#runOptBtn", "click", () => {
+    U.on("#runOptBtn", "click", async () => {
       const check = window.APP_VALIDATOR.validateDesign(s);
       if (!check.valid) {
         U.showValidationErrors(root, "#optValidationErrors", check.errors);
@@ -602,23 +614,21 @@ Thermal Comfort Score = ${sc.thermalComfortScore} / 100</pre>
       const nw = normalizedWeights(w);
       s.weights = nw;
       const btn = U.qs("#runOptBtn", root);
+      const statusEl = U.qs("#optRunStatus", root);
       btn.disabled = true;
       btn.classList.add("is-loading");
       const broaderSearch = !!(U.qs("#broaderSearchToggle", root) && U.qs("#broaderSearchToggle", root).checked);
-      setTimeout(() => {
-        try {
-          const result = ENGINE.runOptimization(s.design, season, s.simConfig, nw, { broaderSearch });
-          STORE.recordOptimization(result);
-          window.APP.render();
-          window.APP.toast(result.usedMlScreening
-            ? `Optimization complete — ${result.mlScreenedFrom.toLocaleString("en-IN")} ML-screened, ${result.candidatesEvaluated} verified by real simulation.`
-            : `Optimization complete — ${result.candidatesEvaluated} candidates evaluated.`);
-        } catch (e) {
-          U.showValidationErrors(root, "#optValidationErrors", [{ field: null, message: "Optimization failed: " + e.message }]);
-          btn.disabled = false;
-          btn.classList.remove("is-loading");
-        }
-      }, 30);
+      try {
+        const result = await window.APP_ADAPTER.runOfficialOptimization(STORE.get(), nw, broaderSearch, (msg) => { if (statusEl) statusEl.textContent = msg; });
+        STORE.recordOptimization(result);
+        window.APP.render();
+        window.APP.toast(`Optimization complete — ${result.candidatesEvaluated} candidates evaluated.`);
+      } catch (e) {
+        if (statusEl) statusEl.textContent = "";
+        U.showValidationErrors(root, "#optValidationErrors", [{ field: null, message: "Optimization failed: " + e.message }]);
+        btn.disabled = false;
+        btn.classList.remove("is-loading");
+      }
     }, root);
   };
 

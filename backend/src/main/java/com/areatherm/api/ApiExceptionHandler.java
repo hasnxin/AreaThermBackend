@@ -9,11 +9,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
@@ -89,6 +91,27 @@ public class ApiExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, "No endpoint " + request.getMethod() + " " + request.getRequestURI(), request);
+    }
+
+    /**
+     * {@link ResponseStatusException} (and any other {@link
+     * ErrorResponseException}) is how {@code ShelterDesignController},
+     * {@code SimulationController}, {@code OptimizationRunController}, and
+     * {@code ReportController} report their own 400/404/501s. Without this
+     * handler, Spring resolves exceptions through {@code
+     * ExceptionHandlerExceptionResolver} -- i.e. this
+     * {@code @RestControllerAdvice} -- before it ever reaches the framework's
+     * own {@code ResponseStatusExceptionResolver}, so {@link
+     * #handleUnexpected}'s catch-all would intercept it first and flatten
+     * every one of those statuses to a generic 500. Handled explicitly here
+     * instead, so the exception's own status code and detail message reach
+     * the client untouched.
+     */
+    @ExceptionHandler({ResponseStatusException.class, ErrorResponseException.class})
+    public ResponseEntity<ApiErrorResponse> handleResponseStatus(ErrorResponseException ex, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+        String message = ex.getBody().getDetail() != null ? ex.getBody().getDetail() : status.getReasonPhrase();
+        return build(status, message, request);
     }
 
     /**

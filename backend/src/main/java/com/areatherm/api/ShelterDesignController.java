@@ -1,6 +1,7 @@
 package com.areatherm.api;
 
 import com.areatherm.api.dto.CreateShelterDesignRequest;
+import com.areatherm.api.dto.ShelterDesignDetailResponse;
 import com.areatherm.design.*;
 import com.areatherm.material.Material;
 import com.areatherm.material.MaterialRepository;
@@ -8,12 +9,12 @@ import com.areatherm.project.Project;
 import com.areatherm.project.ProjectRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -55,8 +56,9 @@ public class ShelterDesignController {
     }
 
     @PostMapping("/projects/{projectId}/shelter-designs")
+    @ResponseStatus(HttpStatus.CREATED)
     @Transactional
-    public ResponseEntity<Map<String, Object>> create(@PathVariable Long projectId, @Valid @RequestBody CreateShelterDesignRequest req) {
+    public ShelterDesignDetailResponse create(@PathVariable Long projectId, @Valid @RequestBody CreateShelterDesignRequest req) {
         if (!projectId.equals(req.projectId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Path projectId does not match body projectId");
         }
@@ -65,7 +67,74 @@ public class ShelterDesignController {
         ComfortProfile comfortProfile = comfortProfileRepository.findById(req.comfortProfileId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown comfort profile: " + req.comfortProfileId()));
 
-        ShelterDesign d = new ShelterDesign();
+        ShelterDesign saved = shelterDesignRepository.save(applyRequest(new ShelterDesign(), req, project, comfortProfile));
+        ChildRows children = createChildRows(saved, req);
+
+        return ShelterDesignDetailResponse.from(saved, children.windows(), children.doors(), children.thermalMass());
+    }
+
+    @GetMapping("/shelter-designs/{id}")
+    public ShelterDesignDetailResponse get(@PathVariable Long id) {
+        ShelterDesign d = shelterDesignRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No shelter design with id " + id));
+        List<Opening> openings = openingRepository.findByShelterDesignId(id);
+        List<Opening> windows = openings.stream().filter(o -> o.getOpeningType() == Opening.OpeningType.WINDOW).toList();
+        List<Opening> doors = openings.stream().filter(o -> o.getOpeningType() == Opening.OpeningType.DOOR).toList();
+        ThermalMass thermalMass = thermalMassRepository.findByShelterDesignId(id).orElse(null);
+        return ShelterDesignDetailResponse.from(d, windows, doors, thermalMass);
+    }
+
+    @PutMapping("/shelter-designs/{id}")
+    @Transactional
+    public ShelterDesignDetailResponse update(@PathVariable Long id, @Valid @RequestBody CreateShelterDesignRequest req) {
+        ShelterDesign d = shelterDesignRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No shelter design with id " + id));
+        if (!d.getProject().getId().equals(req.projectId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                "Body projectId does not match this shelter design's project: " + d.getProject().getId());
+        }
+        ComfortProfile comfortProfile = comfortProfileRepository.findById(req.comfortProfileId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown comfort profile: " + req.comfortProfileId()));
+
+        // Full replace of child rows: delete existing, then re-create from
+        // the request below -- simplest correct approach, matches create(),
+        // rather than diffing/patching individual openings. Done BEFORE
+        // applyRequest()/save() touch d's own fields, for two related reasons:
+        //  1. thermal_mass has a UNIQUE constraint on shelter_design_id, and
+        //     Opening/ThermalMass both use IDENTITY generation (which forces
+        //     an immediate INSERT on save(), unlike the deferred DELETE), so
+        //     the deletes must be flushed before any new child row is
+        //     inserted for this design, or the new ThermalMass row's insert
+        //     hits that unique constraint against the still-present old row.
+        //  2. ShelterDesign.thermalMass is @OneToOne(mappedBy=...): without
+        //     bytecode enhancement Hibernate can't truly lazy-load the
+        //     non-owning side of a one-to-one, so d.thermalMass is already
+        //     eagerly populated with the OLD row as soon as d is loaded
+        //     above. Deleting that row without also clearing d's own
+        //     in-memory reference to it leaves a dangling link that throws
+        //     TransientObjectException the moment d becomes dirty (from
+        //     applyRequest()) and gets flushed -- Hibernate walks every
+        //     association of a dirty entity at flush time, mappedBy ones
+        //     included.
+        List<Opening> existingOpenings = openingRepository.findByShelterDesignId(id);
+        if (!existingOpenings.isEmpty()) {
+            openingRepository.deleteAll(existingOpenings);
+        }
+        thermalMassRepository.findByShelterDesignId(id).ifPresent(tm -> {
+            thermalMassRepository.delete(tm);
+            d.setThermalMass(null);
+        });
+        openingRepository.flush();
+        thermalMassRepository.flush();
+
+        ShelterDesign saved = shelterDesignRepository.save(applyRequest(d, req, d.getProject(), comfortProfile));
+        ChildRows children = createChildRows(saved, req);
+
+        return ShelterDesignDetailResponse.from(saved, children.windows(), children.doors(), children.thermalMass());
+    }
+
+    /** Scalar-field mapping shared by create() and update() -- everything except the child Opening/ThermalMass rows. */
+    private ShelterDesign applyRequest(ShelterDesign d, CreateShelterDesignRequest req, Project project, ComfortProfile comfortProfile) {
         d.setProject(project);
         d.setName(req.name());
         d.setShape(parseEnum(ShelterDesign.Shape.class, req.shape(), "shape"));
@@ -85,13 +154,23 @@ public class ShelterDesignController {
         d.setRoofThicknessMm(bd(req.roofThicknessMm()));
         d.setFloorMaterial(requireMaterial(req.floorMaterialId()));
         d.setFloorThicknessMm(bd(req.floorThicknessMm()));
+        // PUT is a full replace: a request that omits insulation must clear
+        // any insulation the design previously had, not just leave stale
+        // material/thickness in place (a no-op for create(), where these
+        // fields are already null on a brand-new entity).
         if (req.wallInsulationMaterialId() != null) {
             d.setWallInsulationMaterial(requireMaterial(req.wallInsulationMaterialId()));
             d.setWallInsulationThicknessMm(bd(req.wallInsulationThicknessMm()));
+        } else {
+            d.setWallInsulationMaterial(null);
+            d.setWallInsulationThicknessMm(null);
         }
         if (req.roofInsulationMaterialId() != null) {
             d.setRoofInsulationMaterial(requireMaterial(req.roofInsulationMaterialId()));
             d.setRoofInsulationThicknessMm(bd(req.roofInsulationThicknessMm()));
+        } else {
+            d.setRoofInsulationMaterial(null);
+            d.setRoofInsulationThicknessMm(null);
         }
         d.setAirLeakageAch(bd(req.airLeakageAch()));
         d.setComfortProfile(comfortProfile);
@@ -101,14 +180,23 @@ public class ShelterDesignController {
             : ShelterDesign.OccupancyActivity.SEATED);
         d.setInternalHeatGainW(bd(req.internalHeatGainW() != null ? req.internalHeatGainW() : 0));
         d.setGroundTempC(bd(req.groundTempC()));
-        ShelterDesign saved = shelterDesignRepository.save(d);
+        return d;
+    }
 
+    private record ChildRows(List<Opening> windows, List<Opening> doors, ThermalMass thermalMass) {
+    }
+
+    /** Creates the Opening/ThermalMass child rows for an already-saved design -- shared by create() and update(). */
+    private ChildRows createChildRows(ShelterDesign saved, CreateShelterDesignRequest req) {
+        List<Opening> windows = new ArrayList<>();
         for (CreateShelterDesignRequest.OpeningRequest w : req.windows() != null ? req.windows() : List.<CreateShelterDesignRequest.OpeningRequest>of()) {
-            openingRepository.save(toOpening(saved, Opening.OpeningType.WINDOW, w));
+            windows.add(openingRepository.save(toOpening(saved, Opening.OpeningType.WINDOW, w)));
         }
+        List<Opening> doors = new ArrayList<>();
         for (CreateShelterDesignRequest.OpeningRequest doorReq : req.doors() != null ? req.doors() : List.<CreateShelterDesignRequest.OpeningRequest>of()) {
-            openingRepository.save(toOpening(saved, Opening.OpeningType.DOOR, doorReq));
+            doors.add(openingRepository.save(toOpening(saved, Opening.OpeningType.DOOR, doorReq)));
         }
+        ThermalMass thermalMass = null;
         if (req.thermalMass() != null) {
             ThermalMass tm = new ThermalMass();
             tm.setShelterDesign(saved);
@@ -119,22 +207,9 @@ public class ShelterDesignController {
                 ? parseEnum(ThermalMass.Exposure.class, req.thermalMass().exposure(), "thermalMass.exposure")
                 : ThermalMass.Exposure.FLOOR);
             tm.setPcm(tm.getMaterial().getPcmMeltTempC() != null);
-            thermalMassRepository.save(tm);
+            thermalMass = thermalMassRepository.save(tm);
         }
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", saved.getId(), "name", saved.getName()));
-    }
-
-    @GetMapping("/shelter-designs/{id}")
-    public Map<String, Object> get(@PathVariable Long id) {
-        ShelterDesign d = shelterDesignRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No shelter design with id " + id));
-        return Map.of(
-            "id", d.getId(), "name", d.getName(), "shape", d.getShape().name(),
-            "orientation", d.getOrientation().name(), "wallMaterialId", d.getWallMaterial().getId(),
-            "roofMaterialId", d.getRoofMaterial().getId(), "floorMaterialId", d.getFloorMaterial().getId(),
-            "comfortProfileId", d.getComfortProfile().getId()
-        );
+        return new ChildRows(windows, doors, thermalMass);
     }
 
     private Material requireMaterial(Long id) {

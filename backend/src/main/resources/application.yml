@@ -40,6 +40,11 @@ areatherm:
     # for anything beyond a laptop. Never committed as a real secret.
     secret: ${AREATHERM_JWT_SECRET:dev-only-secret-change-me-areatherm-backend-local-use-only-0123456789}
     expiration-minutes: 120
+  cors:
+    # Browser origin(s) allowed to call this API cross-origin -- the
+    # standalone frontend's dev-server origin today.
+    allowed-origins:
+      - http://localhost:8743
   async:
     core-pool-size: 4
     max-pool-size: 8

@@ -177,7 +177,12 @@ public final class OptimizationEngine {
         List<Opening> windows = baseDesign.windows();
         String glzId = (windows != null && !windows.isEmpty() && windows.get(0).glazingMaterial() != null)
             ? windows.get(0).glazingMaterial().id() : null;
-        return SECONDARY_GLAZINGS.contains(glzId) ? glzId : "glaze_double";
+        // glzId is legitimately null when a window has no glazing material set
+        // (nullable at the API level - CreateShelterDesignRequest.OpeningRequest
+        // doesn't require one). List.of(...).contains(null) throws NPE in Java,
+        // unlike JS's Array.includes(null), which just returns false - guard it
+        // explicitly rather than relying on short-circuiting inside .contains().
+        return glzId != null && SECONDARY_GLAZINGS.contains(glzId) ? glzId : "glaze_double";
     }
 
     private static MassOptionId currentMassOptionOf(Design baseDesign) {

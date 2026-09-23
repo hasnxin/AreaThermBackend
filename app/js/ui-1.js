@@ -369,6 +369,22 @@ window.UI = window.UI || {};
     renderClimateCards(root, s, season);
     initLocationMap(root);
 
+    // Fire-and-forget backend save after a successful live fetch — never
+    // blocks the already-successful local UI update, and failure only gets
+    // a soft toast (the live climate itself is unaffected either way). Note:
+    // the data-source transparency badge always keeps reading
+    // state.climateSource (client-side, set by STORE.loadRealClimate/
+    // loadCustomLocation) — never this persisted copy, which the backend
+    // unconditionally labels USER_PROVIDED regardless of how it was really
+    // obtained (see API_SPEC.md's Conventions section).
+    function persistLocationInBackground() {
+      const ADAPTER = window.APP_ADAPTER;
+      const st = STORE.get();
+      ADAPTER.ensureProject(st)
+        .then(projectId => ADAPTER.ensureLocation(st, projectId).then(locationId => ADAPTER.ensureClimateProfile(st, projectId, locationId)))
+        .catch(e => window.APP.toast("Weather loaded, but saving it to your account failed: " + e.message));
+    }
+
     async function loadLocationById(id) {
       const btn = U.qs("#loadRealBtn", root);
       const statusEl = U.qs("#fetchStatus", root);
@@ -378,6 +394,7 @@ window.UI = window.UI || {};
         await STORE.loadRealClimate(id);
         window.APP.render();
         window.APP.toast("Weather loaded (" + STORE.get().climateSource.label + ").");
+        persistLocationInBackground();
       } catch (e) {
         statusEl.classList.add("status-error");
         statusEl.textContent = "Could not fetch live weather: " + e.message + " — check your internet connection and try again.";
@@ -409,6 +426,7 @@ window.UI = window.UI || {};
         }
         window.APP.render();
         window.APP.toast(`Weather loaded (${near ? near.name : STORE.get().location.label}).`);
+        persistLocationInBackground();
       } catch (e) {
         if (statusEl) { statusEl.classList.add("status-error"); statusEl.textContent = "Could not fetch live weather: " + e.message + " — check your internet connection and try again."; }
         if (btn) { btn.disabled = false; btn.classList.remove("is-loading"); }
@@ -1137,25 +1155,35 @@ window.UI = window.UI || {};
     liveRecompute();
     wireWindowGroupsEvents(root, "d", readDesignFromForm, liveRecompute);
 
-    U.on("#saveDesignBtn", "click", () => {
+    // Persists the design to the backend (project + comfort profile +
+    // shelter design — location/climate aren't needed just to save a
+    // design). Reuses whatever backend ids this state already has (see
+    // adapter.js's ensure* functions), so repeat saves update the same
+    // rows via PUT rather than creating new ones.
+    async function saveDesignToBackend(btnSel, successMsg) {
       const draft = readDesignFromForm();
       const check = window.APP_VALIDATOR.validateDesign({ ...STORE.get(), design: draft });
       if (!check.valid) { U.showValidationErrors(root, "#designerErrors", check.errors); return; }
       U.showValidationErrors(root, "#designerErrors", []);
       STORE.updateDesign(draft);
-      window.APP.render();
-      window.APP.toast("Shelter design saved.");
-    }, root);
+      const btn = U.qs(btnSel, root);
+      if (btn) { btn.disabled = true; btn.classList.add("is-loading"); }
+      try {
+        const ADAPTER = window.APP_ADAPTER;
+        const s = STORE.get();
+        const projectId = await ADAPTER.ensureProject(s);
+        const comfortProfileId = await ADAPTER.ensureComfortProfile(s, projectId);
+        await ADAPTER.saveShelterDesign(s, projectId, comfortProfileId);
+        window.APP.render();
+        window.APP.toast(successMsg);
+      } catch (e) {
+        window.APP.toast("Saved locally, but the server save failed: " + e.message);
+        if (btn) { btn.disabled = false; btn.classList.remove("is-loading"); }
+      }
+    }
 
-    U.on("#saveMaterialsBtn", "click", () => {
-      const draft = readDesignFromForm();
-      const check = window.APP_VALIDATOR.validateDesign({ ...STORE.get(), design: draft });
-      if (!check.valid) { U.showValidationErrors(root, "#designerErrors", check.errors); return; }
-      U.showValidationErrors(root, "#designerErrors", []);
-      STORE.updateDesign(draft);
-      window.APP.render();
-      window.APP.toast("Construction saved.");
-    }, root);
+    U.on("#saveDesignBtn", "click", () => saveDesignToBackend("#saveDesignBtn", "Shelter design saved."), root);
+    U.on("#saveMaterialsBtn", "click", () => saveDesignToBackend("#saveMaterialsBtn", "Construction saved."), root);
   };
 
   // ---------------------------------------------------------------------
@@ -1200,21 +1228,41 @@ window.UI = window.UI || {};
         <p class="hint status-error" id="cmNameError" style="margin-top:6px;" hidden></p>
       </div>`;
 
-    U.on("#addMaterialBtn", "click", () => {
+    U.on("#addMaterialBtn", "click", async () => {
       const cat = U.qs("#cmCat", root).value, name = U.qs("#cmName", root).value.trim();
       const cmErr = U.qs("#cmNameError", root);
       if (!name) { if (cmErr) { cmErr.hidden = false; cmErr.textContent = "Enter a material name."; } return; }
       if (cmErr) cmErr.hidden = true;
+      const density = parseFloat(U.qs("#cmDensity", root).value) || null;
+      const k = parseFloat(U.qs("#cmK", root).value) || null;
+      const cp = parseFloat(U.qs("#cmCp", root).value) || null;
+      const localId = "custom_" + Date.now();
+      // The local catalog (DATA.MATERIALS) stays the source every local
+      // computation reads (live preview, what-if, sensitivity, the
+      // optimizer) — a custom material is added there immediately, same as
+      // before. It's ALSO posted to the backend (best-effort) so it gets a
+      // real numeric id usable in a saved shelter design; the material
+      // lookup cache is refreshed so a save right after this picks it up.
       DATA.MATERIALS.push({
-        id: "custom_" + Date.now(), category: cat, name,
-        density: parseFloat(U.qs("#cmDensity", root).value) || null,
-        k: parseFloat(U.qs("#cmK", root).value) || null,
-        cp: parseFloat(U.qs("#cmCp", root).value) || null,
+        id: localId, category: cat, name,
+        density, k, cp,
         absorptivity: 0.6, reflectivity: 0.4, emissivity: 0.9,
         costPerM2: 1000, costPerKg: 5, sustainability: "MEDIUM", isCustom: true
       });
       window.APP.render();
       window.APP.toast("Custom material added (user-provided — not a validated engineering value).");
+      const created = await window.APP_BACKEND.createMaterial({
+        slug: localId, // matches the local catalog id exactly, so adapter.js's slug->id lookup resolves this material after a refresh
+        category: cat, name: name,
+        densityKgM3: density, thermalConductivityWMk: k, specificHeatJKgK: cp,
+        solarAbsorptivity: 0.6, solarReflectivity: 0.4, emissivity: 0.9,
+        costEstimateInrPerUnit: 1000, sustainabilityIndicator: "MEDIUM"
+      }).catch(e => { window.APP.toast("Added locally, but saving it to the server failed: " + e.message); return null; });
+      if (created) {
+        const mat = DATA.MATERIALS.find(m => m.id === localId);
+        if (mat) mat.backendId = created.id;
+        await window.APP_ADAPTER.loadMaterialLookup(true); // refresh the slug/id cache so a save right after this can use it
+      }
     }, root);
   };
 
@@ -1564,7 +1612,7 @@ window.UI = window.UI || {};
       <div class="wizard-nav"><button class="btn" id="guidedBack">← Back</button><span></span></div>`;
 
     U.on("#guidedBack", "click", () => { guidedStep = 4; window.APP.render(); }, root);
-    U.on("#gRunBtn", "click", () => {
+    U.on("#gRunBtn", "click", async () => {
       const check = window.APP_VALIDATOR.validateDesign(s);
       if (!check.valid) {
         U.showValidationErrors(root, "#gValidationErrors", check.errors);
@@ -1573,25 +1621,24 @@ window.UI = window.UI || {};
       }
       U.showValidationErrors(root, "#gValidationErrors", []);
       const btn = U.qs("#gRunBtn", root);
+      const statusEl = U.qs("#gRunStatus", root);
       btn.disabled = true;
       btn.classList.add("is-loading");
-      U.qs("#gRunStatus", root).textContent = "Running thermal simulation and design optimization…";
-      setTimeout(() => {
-        try {
-          const result = ENGINE.runSimulation(s.design, season, s.simConfig);
-          STORE.recordSimulation(result);
-          const opt = ENGINE.runOptimization(s.design, season, s.simConfig, s.weights);
-          STORE.recordOptimization(opt);
-          guidedStep = 1; // reset wizard for next time
-          window.APP.navigate("evaluator");
-          window.APP.toast("Simulation and optimization complete.");
-        } catch (e) {
-          U.qs("#gRunStatus", root).textContent = "";
-          U.showValidationErrors(root, "#gValidationErrors", [{ field: null, message: "Simulation failed: " + e.message }]);
-          btn.disabled = false;
-          btn.classList.remove("is-loading");
-        }
-      }, 30);
+      const notify = (msg) => { if (statusEl) statusEl.textContent = msg; };
+      try {
+        const result = await window.APP_ADAPTER.runOfficialSimulation(s, notify);
+        STORE.recordSimulation(result);
+        const opt = await window.APP_ADAPTER.runOfficialOptimization(s, s.weights, false, notify);
+        STORE.recordOptimization(opt);
+        guidedStep = 1; // reset wizard for next time
+        window.APP.navigate("evaluator");
+        window.APP.toast("Simulation and optimization complete.");
+      } catch (e) {
+        if (statusEl) statusEl.textContent = "";
+        U.showValidationErrors(root, "#gValidationErrors", [{ field: null, message: "Simulation failed: " + e.message }]);
+        btn.disabled = false;
+        btn.classList.remove("is-loading");
+      }
     }, root);
   }
 })();
