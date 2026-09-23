@@ -27,6 +27,17 @@ is deliberately organized (see §6, file layout) so each JS module maps onto
 a specific Spring Boot service / Angular feature module, making the port
 mechanical rather than a redesign.
 
+**Update**: the Spring Boot backend described in §1 now exists at
+[`backend/`](backend/) (Java 17, Spring Boot 3) — see
+[`backend/README.md`](backend/README.md) for build/run instructions.
+`thermal/`/`optimization/` there are a numerically-verified, zero-framework
+port of this document's §3-4 and `app/js/engine.js`, checked against real
+captured output from this exact prototype (golden-file tests, not just unit
+tests). Infrastructure only so far: no LLM is wired up anywhere in it (see
+§9 and `backend/`'s `ml/` package), and the frontend above still runs
+standalone against its own in-browser physics engine — the two haven't been
+connected yet.
+
 ---
 
 ## 1. Proposed Production Architecture (target)

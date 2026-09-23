@@ -27,7 +27,12 @@ for a live demo.
 `ARCHITECTURE.md`, `DATABASE_SCHEMA.sql`, and `API_SPEC.md` define the target
 production stack (Angular 18 + Spring Boot + MySQL + Redis) and are written so
 the prototype's modules (`app/js/engine.js`, `store.js`, `data.js`) port onto
-that backend mechanically rather than needing a redesign.
+that backend mechanically rather than needing a redesign. The Spring Boot
+side of that target now exists at [`backend/`](backend/) — see
+[`backend/README.md`](backend/README.md) — as a numerically-verified port of
+this prototype's own physics (golden-file tested against real captured
+`engine.js` output), infrastructure only so far: it isn't wired up to this
+frontend yet, and no ML/LLM is integrated anywhere in it.
 
 ## Run it
 
@@ -114,6 +119,7 @@ AreaTherm/
   ARCHITECTURE.md           production architecture, thermal model, optimization methodology, UI map, roadmap
   DATABASE_SCHEMA.sql        target MySQL schema (all entities from the brief's §20)
   API_SPEC.md                target REST API for the Spring Boot backend
+  backend/                   Spring Boot 3 implementation of the above (see backend/README.md)
   app/                       the running prototype (open app/index.html)
     index.html
     sw.js                     app-shell service worker — caches only this app's own HTML/CSS/JS, never climate data
@@ -165,10 +171,12 @@ AreaTherm/
 
 ## Next steps toward the full brief
 
-1. Stand up the Spring Boot/MySQL backend against `DATABASE_SCHEMA.sql` and
-   `API_SPEC.md`; port `engine.js` to a Java `thermal` service (it's already
-   framework-free, so this is largely a language port, not a redesign).
-2. Wire the Angular frontend to that API instead of `store.js`.
+1. ~~Stand up the Spring Boot/MySQL backend against `DATABASE_SCHEMA.sql` and
+   `API_SPEC.md`; port `engine.js` to a Java `thermal` service~~ — done, see
+   [`backend/`](backend/). Remaining: wire the live climate-fetch adapters
+   (currently stubs) and the ML surrogate (currently a stub by design).
+2. Build the Angular frontend and wire it to that API instead of `store.js`
+   (this vanilla-JS prototype keeps running standalone either way).
 3. Instrument a pilot shelter in Leh/Kargil and feed real readings into the
    Validation module to get an actual MAE/RMSE against the model.
 4. Add ERA5 / IMD / Solcast archive adapters behind the existing

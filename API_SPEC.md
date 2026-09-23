@@ -1,9 +1,12 @@
 # AreaTherm — Target REST API (production backend)
 
-Not implemented in this pass (no backend runtime in this environment — see
-ARCHITECTURE.md §0). The prototype calls the equivalent logic directly as
-JS functions (`app/js/engine.js`, `app/js/store.js`). This is the contract
-a Spring Boot backend should expose so the same frontend calls map 1:1.
+Implemented for most of the resources below at [`backend/`](backend/)
+(Spring Boot 3 — see [`backend/README.md`](backend/README.md) for build/run
+instructions; a couple of endpoints noted there aren't wired to a route
+yet). The frontend prototype (`app/`) still calls the equivalent logic
+directly as JS functions (`app/js/engine.js`, `app/js/store.js`) rather than
+this API — the two haven't been connected yet. This is the contract the
+backend exposes so that future integration can map 1:1.
 
 Base path: `/api/v1`. Auth: `Authorization: Bearer <JWT>`. All bodies JSON.
 
