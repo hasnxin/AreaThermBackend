@@ -30,4 +30,25 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * Separate, smaller pool for verification-code/login-notification
+     * emails (see EmailService) -- kept independent of engineTaskExecutor
+     * so a slow/unreachable SMTP server can never delay simulation or
+     * optimization job dispatch, or vice versa.
+     */
+    @Bean(name = "mailTaskExecutor")
+    public Executor mailTaskExecutor(
+        @Value("${areatherm.mail.async.core-pool-size:2}") int corePoolSize,
+        @Value("${areatherm.mail.async.max-pool-size:4}") int maxPoolSize,
+        @Value("${areatherm.mail.async.queue-capacity:50}") int queueCapacity
+    ) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setQueueCapacity(queueCapacity);
+        executor.setThreadNamePrefix("mail-");
+        executor.initialize();
+        return executor;
+    }
 }

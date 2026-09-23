@@ -107,6 +107,13 @@ window.APP_BACKEND = (function () {
     const res = await post("/auth/login", { email: email, password: password });
     return setAuth(res, email);
   }
+  // Verifying a registration code logs you in too — the backend returns the
+  // same {token,tokenType,expiresInMinutes} shape /login does.
+  async function verifyEmail(email, code) {
+    const res = await post("/auth/verify-email", { email: email, code: code });
+    return setAuth(res, email);
+  }
+  function resendVerification(email) { return post("/auth/resend-verification", { email: email }); }
 
   // ---- Projects --------------------------------------------------------
   function listProjects() { return get("/projects"); }
@@ -188,7 +195,7 @@ window.APP_BACKEND = (function () {
   }
 
   return {
-    isAuthValid, getAuth, clearAuth, logout, register, login,
+    isAuthValid, getAuth, clearAuth, logout, register, login, verifyEmail, resendVerification,
     listProjects, getProject, createProject, deleteProject,
     listLocations, createLocation, listClimateProfilesForLocation, createClimateProfile,
     listMaterials, createMaterial,

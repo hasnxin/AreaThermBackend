@@ -22,6 +22,21 @@ spring:
     locations: classpath:db/migration
   cache:
     type: simple
+  mail:
+    # SMTP via a Gmail account + an "app password" (myaccount.google.com/apppasswords)
+    # -- never a real Google account password. Both env vars are required for
+    # real sending; left unset, EmailService's sends fail (logged, not thrown)
+    # and registration/login/verification still work normally otherwise.
+    host: smtp.gmail.com
+    port: 587
+    username: ${AREATHERM_MAIL_USERNAME:}
+    password: ${AREATHERM_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   port: 8080
@@ -49,3 +64,7 @@ areatherm:
     core-pool-size: 4
     max-pool-size: 8
     queue-capacity: 100
+  mail:
+    # "From" address on outgoing mail -- normally the same as spring.mail.username above.
+    from: ${AREATHERM_MAIL_USERNAME:}
+    verification-code-expiry-minutes: 15

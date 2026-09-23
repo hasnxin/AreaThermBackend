@@ -48,6 +48,15 @@ public class AppUser {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
+    @Column(name = "verification_code", length = 10)
+    private String verificationCode;
+
+    @Column(name = "verification_code_expires_at")
+    private LocalDateTime verificationCodeExpiresAt;
+
     public enum UserRole {
         ADMIN, RESEARCHER, ENGINEER, VIEWER
     }

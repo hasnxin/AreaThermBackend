@@ -1,5 +1,7 @@
 package com.areatherm.security;
 
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,12 +21,19 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class AppUserService implements UserDetailsService {
 
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final MailProperties mailProperties;
 
-    public AppUserService(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder) {
+    public AppUserService(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder,
+                           EmailService emailService, MailProperties mailProperties) {
         this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
+        this.mailProperties = mailProperties;
     }
 
     /**
@@ -48,12 +57,54 @@ public class AppUserService implements UserDetailsService {
         user.setDisplayName(displayName);
         user.setRole(role != null ? role : AppUser.UserRole.ENGINEER);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        applyFreshVerificationCode(user);
 
+        AppUser saved;
         try {
-            return appUserRepository.save(user);
+            saved = appUserRepository.save(user);
         } catch (DataIntegrityViolationException ex) {
             throw new EmailAlreadyRegisteredException(email, ex);
         }
+        emailService.sendVerificationCodeAsync(saved.getEmail(), saved.getVerificationCode());
+        return saved;
+    }
+
+    /**
+     * @throws InvalidVerificationCodeException if the email is unknown, the
+     *         code doesn't match, or it's expired -- deliberately one generic
+     *         outcome for all three so this endpoint never reveals whether a
+     *         given email is registered.
+     */
+    @Transactional
+    public AppUser verifyEmail(String email, String code) {
+        AppUser user = appUserRepository.findByEmail(email).orElse(null);
+        if (user == null || user.getVerificationCode() == null
+                || !user.getVerificationCode().equals(code)
+                || user.getVerificationCodeExpiresAt() == null
+                || user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidVerificationCodeException();
+        }
+        user.setEmailVerified(true);
+        user.setVerificationCode(null);
+        user.setVerificationCodeExpiresAt(null);
+        return appUserRepository.save(user);
+    }
+
+    /** Silently no-ops on an unknown email -- never reveals whether it's registered. */
+    @Transactional
+    public void resendVerificationCode(String email) {
+        AppUser user = appUserRepository.findByEmail(email).orElse(null);
+        if (user == null || user.isEmailVerified()) {
+            return;
+        }
+        applyFreshVerificationCode(user);
+        appUserRepository.save(user);
+        emailService.sendVerificationCodeAsync(user.getEmail(), user.getVerificationCode());
+    }
+
+    private void applyFreshVerificationCode(AppUser user) {
+        user.setVerificationCode(String.format("%06d", RANDOM.nextInt(1_000_000)));
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(mailProperties.getVerificationCodeExpiryMinutes()));
     }
 
     @Transactional(readOnly = true)

@@ -6,6 +6,10 @@
 window.UI = window.UI || {};
 (function () {
   const BACKEND = window.APP_BACKEND;
+  // Carries the just-registered (or not-yet-verified) email into the verify
+  // screen — same simple module-level-variable pattern as ui-1.js's
+  // Guided Setup wizard step state.
+  let pendingVerificationEmail = null;
 
   function authShellHtml(title, subtitle, bodyHtml) {
     return `<div class="card" style="max-width:400px;width:100%;">
@@ -50,7 +54,12 @@ window.UI = window.UI || {};
         window.APP.navigate("dashboard");
       } catch (e) {
         statusEl.hidden = false;
-        statusEl.textContent = e.status === 401 ? "Incorrect email or password." : ("Could not sign in: " + e.message + " — is the backend running?");
+        if (e.status === 403) {
+          pendingVerificationEmail = email;
+          statusEl.innerHTML = 'Please verify your email first. <a href="#/verify-email" style="color:inherit;font-weight:700;text-decoration:underline;">Enter your code →</a>';
+        } else {
+          statusEl.textContent = e.status === 401 ? "Incorrect email or password." : ("Could not sign in: " + e.message + " — is the backend running?");
+        }
         btn.disabled = false;
         btn.classList.remove("is-loading");
       }
@@ -99,9 +108,9 @@ window.UI = window.UI || {};
       btn.classList.add("is-loading");
       try {
         await BACKEND.register({ email: email, displayName: displayName, password: password });
-        await BACKEND.login(email, password); // register doesn't itself issue a token
-        window.APP.toast("Account created — welcome to AreaTherm.");
-        window.APP.navigate("dashboard");
+        pendingVerificationEmail = email;
+        window.APP.toast("Account created — check your email for a verification code.");
+        window.APP.navigate("verify-email");
       } catch (e) {
         statusEl.hidden = false;
         statusEl.textContent = e.status === 409 ? "An account with that email already exists." : ("Could not create account: " + e.message);
@@ -112,5 +121,59 @@ window.UI = window.UI || {};
 
     U.on("#regBtn", "click", doRegister, root);
     U.qs("#regName", root).focus();
+  };
+
+  window.UI.renderVerifyEmail = function (root) {
+    // No pending email (e.g. a direct link/reload) — nothing to verify yet,
+    // send them to register rather than showing a broken/empty form.
+    if (!pendingVerificationEmail) { window.APP.navigate("register"); return; }
+    const email = pendingVerificationEmail;
+
+    root.innerHTML = authShellHtml("Check your email", `We sent a 6-digit verification code to <b>${U.esc(email)}</b>. Enter it below to finish signing in.`, `
+      <div class="form-row"><label>Verification Code</label><input id="verifyCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" style="letter-spacing:4px;font-size:18px;text-align:center;" /></div>
+      <div id="verifyStatus" class="hint status-error" hidden></div>
+      <button id="verifyBtn" class="btn btn-accent" style="width:100%;margin-top:4px;">Verify</button>
+      <p class="hint" style="text-align:center;margin-top:16px;">Didn't get a code? <a id="resendLink" href="#" style="color:var(--accent);font-weight:600;">Resend it</a></p>
+    `);
+
+    async function doVerify() {
+      const code = U.qs("#verifyCode", root).value.trim();
+      const statusEl = U.qs("#verifyStatus", root);
+      const btn = U.qs("#verifyBtn", root);
+      statusEl.hidden = true;
+      if (!code) { statusEl.hidden = false; statusEl.textContent = "Enter the code from your email."; return; }
+      btn.disabled = true;
+      btn.classList.add("is-loading");
+      try {
+        await BACKEND.verifyEmail(email, code);
+        pendingVerificationEmail = null;
+        window.APP.toast("Email verified — welcome to AreaTherm.");
+        window.APP.navigate("dashboard");
+      } catch (e) {
+        statusEl.hidden = false;
+        statusEl.textContent = e.status === 400 ? "That code is invalid or has expired — try resending it." : ("Could not verify: " + e.message);
+        btn.disabled = false;
+        btn.classList.remove("is-loading");
+      }
+    }
+
+    U.on("#verifyBtn", "click", doVerify, root);
+    U.on("#verifyCode", "keydown", (e) => { if (e.key === "Enter") doVerify(); }, root);
+    U.on("#resendLink", "click", async (e) => {
+      e.preventDefault();
+      const link = U.qs("#resendLink", root);
+      const statusEl = U.qs("#verifyStatus", root);
+      link.textContent = "Sending…";
+      try {
+        await BACKEND.resendVerification(email);
+        window.APP.toast("A new code is on its way.");
+      } catch (err) {
+        statusEl.hidden = false;
+        statusEl.textContent = "Could not resend: " + err.message;
+      } finally {
+        link.textContent = "Resend it";
+      }
+    }, root);
+    U.qs("#verifyCode", root).focus();
   };
 })();

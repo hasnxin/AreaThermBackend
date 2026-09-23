@@ -2,7 +2,7 @@
 window.APP = (function () {
   const STORE = window.APP_STORE, ENGINE = window.APP_ENGINE, CFG = window.APP_CONFIG, BACKEND = window.APP_BACKEND, ADAPTER = window.APP_ADAPTER;
   const viewRoot = () => document.getElementById("viewRoot");
-  const AUTH_ROUTES = ["login", "register"];
+  const AUTH_ROUTES = ["login", "register", "verify-email"];
 
   const ROUTES = {
     dashboard: window.UI.renderDashboard,
@@ -20,7 +20,8 @@ window.APP = (function () {
     evaluator: window.UI.renderEvaluator,
     settings: window.UI.renderSettings,
     login: window.UI.renderLogin,
-    register: window.UI.renderRegister
+    register: window.UI.renderRegister,
+    "verify-email": window.UI.renderVerifyEmail
   };
 
   function currentRoute() {

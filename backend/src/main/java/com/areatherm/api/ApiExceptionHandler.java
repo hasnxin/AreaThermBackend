@@ -1,6 +1,8 @@
 package com.areatherm.api;
 
 import com.areatherm.security.EmailAlreadyRegisteredException;
+import com.areatherm.security.EmailNotVerifiedException;
+import com.areatherm.security.InvalidVerificationCodeException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +48,16 @@ public class ApiExceptionHandler {
     @ExceptionHandler({BadCredentialsException.class, UsernameNotFoundException.class})
     public ResponseEntity<ApiErrorResponse> handleBadCredentials(RuntimeException ex, HttpServletRequest request) {
         return build(HttpStatus.UNAUTHORIZED, "Invalid email or password", request);
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ApiErrorResponse> handleEmailNotVerified(EmailNotVerifiedException ex, HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidVerificationCodeException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidVerificationCode(InvalidVerificationCodeException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
