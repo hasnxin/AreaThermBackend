@@ -5,6 +5,3 @@ Thumbs.db
 # output (app/js/ml-model-data.js) is what ships; the raw training rows are
 # rebuilt on demand via: node tools/generate-training-data.js
 tools/training-data.json
-
-# backend/ has its own nested .gitignore for Java/Maven build artifacts
-# (target/, data/, reports/, *.log, .idea/, etc.) — see backend/.gitignore.

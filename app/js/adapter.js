@@ -60,6 +60,9 @@ window.APP_ADAPTER = (function () {
       occupancyActivity: design.occupancyActivity,
       internalHeatGainW: design.internalHeatGainW,
       groundTempC: design.groundTempC != null ? design.groundTempC : null,
+      occupancySchedule: Array.isArray(design.occupancySchedule) && design.occupancySchedule.length === 24
+        ? design.occupancySchedule.map(e => ({ occupancyCount: e.persons, occupancyActivity: e.activityId }))
+        : null,
       windows: (design.windows || []).map(op),
       doors: (design.doors || []).map(op),
       thermalMass: design.thermalMass ? {
@@ -89,6 +92,9 @@ window.APP_ADAPTER = (function () {
       airLeakageAch: detail.airLeakageAch,
       thermalMass: detail.thermalMass ? { materialId: slug(detail.thermalMass.materialId), massKg: detail.thermalMass.massKg, surfaceAreaM2: detail.thermalMass.surfaceAreaM2, exposure: detail.thermalMass.exposure } : null,
       occupancy: detail.occupancyCount, occupancyActivity: detail.occupancyActivity,
+      occupancySchedule: Array.isArray(detail.occupancySchedule) && detail.occupancySchedule.length === 24
+        ? detail.occupancySchedule.map(e => ({ persons: e.occupancyCount, activityId: e.occupancyActivity }))
+        : null,
       internalHeatGainW: detail.internalHeatGainW, groundTempC: detail.groundTempC,
       comfort: null
     };

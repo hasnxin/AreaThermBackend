@@ -26,11 +26,19 @@ public record CreateShelterDesignRequest(
     Double groundTempC,
     List<OpeningRequest> windows,
     List<OpeningRequest> doors,
-    ThermalMassRequest thermalMass
+    ThermalMassRequest thermalMass,
+    // Optional hour-indexed alternative to occupancyCount/occupancyActivity
+    // above -- list index IS the hour of day (0-23), so this must be either
+    // null/absent (use the flat pair for the whole run) or exactly 24
+    // entries long, never partial.
+    List<ScheduleHourRequest> occupancySchedule
 ) {
     public record OpeningRequest(double areaEach, int count, @NotBlank String orientation, Long glazingMaterialId) {
     }
 
     public record ThermalMassRequest(@NotNull Long materialId, double massKg, double surfaceAreaM2, String exposure) {
+    }
+
+    public record ScheduleHourRequest(int occupancyCount, @NotBlank String occupancyActivity) {
     }
 }

@@ -274,7 +274,70 @@ public final class ThermalEngine {
         return new OccupancyHeatResult(activity, persons, totalW, sensibleW, latentW, equipmentW, totalSensibleW, latentKgPerHour);
     }
 
-    public static double occupancyAchIncrement(int persons, double volumeM3) {
+    private static Design withOccupancy(Design design, int persons, ActivityLevelSpec activity) {
+        return new Design(
+            design.name(), design.shape(), design.length(), design.width(), design.height(), design.diameter(),
+            design.lengthA(), design.widthA(), design.lengthB(), design.widthB(),
+            design.orientation(), design.azimuthDeg(), design.wall(), design.roof(), design.floor(),
+            design.windows(), design.doors(), design.airLeakageAch(), design.thermalMass(),
+            persons, activity, design.internalHeatGainW(), design.groundTempC(), design.comfort(),
+            design.occupancySchedule()
+        );
+    }
+
+    /**
+     * computeOccupancyHeat(design) is pure in design's occupancy/
+     * occupancyActivity fields, so when design.occupancySchedule() (24
+     * hour-indexed entries) is present, this recomputes it fresh for the
+     * given hour -- called from inside runSimulation's loop below instead
+     * of hoisting a single call above it, so both occupant heat gain and
+     * occupancy-linked ventilation load vary hour by hour, mirroring
+     * engine.js's occupancyForHour(). With no schedule this just calls
+     * computeOccupancyHeat on the unchanged design every time, reproducing
+     * the exact same numbers as computing it once and reusing (verified
+     * by the golden fixtures).
+     */
+    private static OccupancyHeatResult occupancyForHour(Design design, double hourDecimal) {
+        List<OccupancyScheduleEntry> sched = design.occupancySchedule();
+        if (sched != null && sched.size() == 24) {
+            int h = (int) Math.floor(((hourDecimal % 24) + 24) % 24);
+            OccupancyScheduleEntry entry = sched.get(h);
+            return computeOccupancyHeat(withOccupancy(design, entry.persons(), entry.activity()));
+        }
+        return computeOccupancyHeat(design);
+    }
+
+    private record OccupancySummary(int persons, double avgPersons, String activityLabel, double totalW,
+                                     double sensibleW, double latentW, double equipmentW, double latentKgPerHour,
+                                     boolean scheduled) {
+    }
+
+    /**
+     * Schedule-averaged summary for runSimulation's top-level occupancy/ach
+     * report fields ONLY -- the loop always uses occupancyForHour for the
+     * actual physics, never this. Mirrors engine.js's occSummary.
+     */
+    private static OccupancySummary occupancySummary(Design design) {
+        List<OccupancyScheduleEntry> sched = design.occupancySchedule();
+        if (sched != null && sched.size() == 24) {
+            List<OccupancyHeatResult> perHour = sched.stream()
+                .map(e -> computeOccupancyHeat(withOccupancy(design, e.persons(), e.activity())))
+                .toList();
+            int peak = perHour.stream().mapToInt(OccupancyHeatResult::persons).max().orElse(0);
+            double avgPersons = perHour.stream().mapToInt(OccupancyHeatResult::persons).average().orElse(0);
+            double avgTotalW = perHour.stream().mapToDouble(OccupancyHeatResult::totalW).average().orElse(0);
+            double avgSensibleW = perHour.stream().mapToDouble(OccupancyHeatResult::sensibleW).average().orElse(0);
+            double avgLatentW = perHour.stream().mapToDouble(OccupancyHeatResult::latentW).average().orElse(0);
+            double avgLatentKgPerHour = perHour.stream().mapToDouble(OccupancyHeatResult::latentKgPerHour).average().orElse(0);
+            double equipmentW = perHour.get(0).equipmentW(); // not schedule-driven, same every hour
+            return new OccupancySummary(peak, avgPersons, "Scheduled (varies by hour)", avgTotalW, avgSensibleW, avgLatentW, equipmentW, avgLatentKgPerHour, true);
+        }
+        OccupancyHeatResult flat = computeOccupancyHeat(design);
+        return new OccupancySummary(flat.persons(), flat.persons(), flat.activity().label(), flat.totalW(), flat.sensibleW(),
+            flat.latentW(), flat.equipmentW(), flat.latentKgPerHour(), false);
+    }
+
+    public static double occupancyAchIncrement(double persons, double volumeM3) {
         if (!(persons > 0) || !(volumeM3 > 0)) return 0;
         double lps = persons * OCCUPANT_FRESH_AIR_LPS;
         double m3PerHour = lps * 3.6;
@@ -384,13 +447,16 @@ public final class ThermalEngine {
             solidFaceAreas[fi] = Math.max(0, f.areaM2() - openingsHere);
         }
 
-        OccupancyHeatResult occ = computeOccupancyHeat(design);
+        OccupancySummary occSummary = occupancySummary(design);
         double infiltrationAch = windAdjustedInfiltrationAch(design, season);
-        double occupancyAch = occupancyAchIncrement(occ.persons(), geom.volume());
+        double occupancyAch = occupancyAchIncrement(occSummary.avgPersons(), geom.volume()); // reporting only -- see occupancyForHour/occupancySummary above
         double ach = infiltrationAch + occupancyAch;
+        // infiltrationUA is constant for the whole run; occupancy's own
+        // share of ventilation (occupancyVentUA/ventUA) is NOT, unlike
+        // before -- both are computed fresh inside the loop every hour
+        // now, same as every other UA/ref term there, so an hour-varying
+        // schedule's ventilation load is exact rather than averaged.
         double infiltrationUA = ventUAFromAch(infiltrationAch, geom.volume());
-        double occupancyVentUA = ventUAFromAch(occupancyAch, geom.volume());
-        double ventUA = infiltrationUA + occupancyVentUA;
 
         ThermalMassSpec tm = design.thermalMass();
         boolean massActive = tm != null && tm.massKg() > 0;
@@ -460,6 +526,9 @@ public final class ThermalEngine {
             }
             double windowCondRef = windowCondUA * tAmb;
             double doorUA = DOOR_U_VALUE * doorArea, doorRef = doorUA * tAmb;
+            OccupancyHeatResult occ = occupancyForHour(design, hourDecimal);
+            double occupancyVentUA = ventUAFromAch(occupancyAchIncrement(occ.persons(), geom.volume()), geom.volume());
+            double ventUA = infiltrationUA + occupancyVentUA; // infiltration hoisted above the loop, occupancy's share is not -- see occupancyForHour above
             double ventRef = ventUA * tAmb;
             double qInternal = occ.totalSensibleW();
             double massUA = massActive ? massH * massArea : 0, massRef = massUA * tMass;
@@ -557,9 +626,9 @@ public final class ThermalEngine {
         double occupancyVentLossKwhPerDay = round2(occupancyVentLossKwh / totalDays);
         double netOccupancyEffectKwh = round2(occupantSensibleKwhPerDay - occupancyVentLossKwhPerDay);
         String occupancyNote = null;
-        if (occ.persons() > 0) {
+        if (occSummary.persons() > 0) {
             occupancyNote = netOccupancyEffectKwh <= 0.05
-                ? "Ventilation increase from " + occ.persons() + " occupant(s) offsets most or all of their body-heat gain (net "
+                ? "Ventilation increase from " + occSummary.persons() + " occupant(s) offsets most or all of their body-heat gain (net "
                     + (netOccupancyEffectKwh >= 0 ? "+" : "") + netOccupancyEffectKwh + " kWh/day) -- a modelled trade-off, not an error."
                 : "Occupants add more sensible heat than the occupancy-linked ventilation removes (net +" + netOccupancyEffectKwh + " kWh/day).";
         }
@@ -571,9 +640,9 @@ public final class ThermalEngine {
             series,
             new SimulationResult.Ach(round2(infiltrationAch), round2(occupancyAch), round2(ach)),
             new SimulationResult.OccupancyResult(
-                occ.persons(), occ.activity().label(), round2(occ.totalW()), round2(occ.sensibleW()), round2(occ.latentW()),
-                round2(occ.equipmentW()), Math.round(occ.latentKgPerHour() * 1000) / 1000.0,
-                occupantSensibleKwhPerDay, occupancyVentLossKwhPerDay, netOccupancyEffectKwh, occupancyNote
+                occSummary.persons(), occSummary.activityLabel(), round2(occSummary.totalW()), round2(occSummary.sensibleW()),
+                round2(occSummary.latentW()), round2(occSummary.equipmentW()), Math.round(occSummary.latentKgPerHour() * 1000) / 1000.0,
+                occupantSensibleKwhPerDay, occupancyVentLossKwhPerDay, netOccupancyEffectKwh, occupancyNote, occSummary.scheduled()
             ),
             new SimulationResult.DailyResult(
                 round2(solarKwh / totalDays), round2(wallLossKwh / totalDays), round2(roofLossKwh / totalDays),
@@ -625,6 +694,85 @@ public final class ThermalEngine {
         final double WASTE_FACTOR = 0.10;
         cost *= (1 + WASTE_FACTOR);
         return Math.round(cost);
+    }
+
+    // ---- Regional material availability (see app/js/data.js materialAvailability) ----
+    // A rule-based estimate from a material's sustainability tag and the
+    // site's elevation (a remoteness proxy) -- not a supplier directory, no
+    // specific supplier names invented. Ported alongside estimateCostBreakdown
+    // below since nothing in this package needed it until now.
+    public static MaterialAvailability materialAvailability(MaterialProperties material, double elevationM) {
+        double remoteness = Math.min(1, Math.max(0, elevationM) / 4000.0);
+        int baseLeadDays;
+        boolean availableLocally;
+        String sustainability = material != null ? material.sustainability() : null;
+        if ("HIGH".equals(sustainability)) { baseLeadDays = 3; availableLocally = true; }
+        else if ("MEDIUM".equals(sustainability)) { baseLeadDays = 10; availableLocally = remoteness < 0.5; }
+        else { baseLeadDays = 21; availableLocally = false; }
+        int leadTimeDays = (int) Math.round(baseLeadDays * (1 + remoteness * 1.5));
+        double transportMultiplier = Math.round((1 + remoteness * 0.6) * 100) / 100.0;
+        return new MaterialAvailability(availableLocally, leadTimeDays, transportMultiplier);
+    }
+
+    // ---- Estimated cost breakdown (location-aware, INR) --------------------
+    // Same per-component costing as estimateCost() above -- added alongside
+    // it, not replacing it, so estimateCost's existing callers in
+    // OptimizationEngine are unaffected -- but broken into line items and
+    // adjusted by each material's regional transport multiplier (see
+    // materialAvailability above). Labor multiplier is a smaller heuristic
+    // scaling off that same remoteness signal, same rule-based-estimate
+    // basis as materialAvailability, not sourced pricing data. Mirrors
+    // app/js/engine.js's estimateCostBreakdown() exactly -- at zero
+    // remoteness (or elevationM <= 0) every multiplier is 1 and this
+    // returns the same total as estimateCost().
+    public static CostBreakdownResult estimateCostBreakdown(Design design, double elevationM) {
+        SimulationResult.Geometry geom = computeGeometry(design);
+        MaterialProperties wallMat = design.wall().material();
+        MaterialProperties roofMat = design.roof().material();
+        MaterialProperties insMat = design.wall().insulationMaterial();
+
+        List<CostBreakdownResult.LineItem> items = new ArrayList<>();
+        double[] subtotal = {0};
+
+        addLineItem(items, subtotal, "Wall material", wallMat, elevationM,
+            (wallMat != null && wallMat.costPerM2() != null ? wallMat.costPerM2() : 1000) * geom.wallArea());
+        addLineItem(items, subtotal, "Roof material", roofMat, elevationM,
+            (roofMat != null && roofMat.costPerM2() != null ? roofMat.costPerM2() : 1200) * geom.roofArea());
+        if (insMat != null) {
+            double insThickness = design.wall().insulationThicknessMm() != null ? design.wall().insulationThicknessMm() : 0;
+            addLineItem(items, subtotal, "Wall insulation", insMat, elevationM,
+                (insMat.costPerM2() != null ? insMat.costPerM2() : 500) * geom.wallArea() * (insThickness / 75.0));
+        }
+        List<Opening> windows = design.windows() == null ? List.of() : design.windows();
+        double glazingCost = 0;
+        MaterialProperties glazingMat = null;
+        for (Opening w : windows) {
+            MaterialProperties g = w.glazingMaterial();
+            double costPerM2 = g != null && g.costPerM2() != null ? g.costPerM2() : 2000;
+            glazingCost += costPerM2 * w.areaEach() * w.count();
+            if (glazingMat == null) glazingMat = g;
+        }
+        addLineItem(items, subtotal, "Glazing", glazingMat, elevationM, glazingCost);
+        if (design.thermalMass() != null && design.thermalMass().massKg() > 0) {
+            MaterialProperties m = design.thermalMass().material();
+            double costPerKg = m != null && m.costPerKg() != null ? m.costPerKg() : 5;
+            addLineItem(items, subtotal, "Thermal mass", m, elevationM, costPerKg * design.thermalMass().massKg());
+        }
+
+        final double WASTE_FACTOR = 0.10;
+        long total = Math.round(subtotal[0] * (1 + WASTE_FACTOR));
+        return new CostBreakdownResult(items, WASTE_FACTOR, Math.round(subtotal[0]), total);
+    }
+
+    private static void addLineItem(List<CostBreakdownResult.LineItem> items, double[] subtotal,
+                                     String label, MaterialProperties material, double elevationM, double baseCost) {
+        if (!(baseCost > 0)) return;
+        MaterialAvailability avail = material != null ? materialAvailability(material, elevationM) : null;
+        double transportMultiplier = avail != null ? avail.transportMultiplier() : 1;
+        double laborMultiplier = Math.round((1 + (transportMultiplier - 1) * 0.5) * 100) / 100.0;
+        double rawTotal = baseCost * transportMultiplier * laborMultiplier;
+        subtotal[0] += rawTotal;
+        items.add(new CostBreakdownResult.LineItem(label, Math.round(baseCost), transportMultiplier, laborMultiplier, Math.round(rawTotal)));
     }
 
     // ---- Validation stats ----------------------------------------------------

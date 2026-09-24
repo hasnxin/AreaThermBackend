@@ -1,6 +1,7 @@
 package com.areatherm.api.dto;
 
 import com.areatherm.design.Opening;
+import com.areatherm.design.OccupancyScheduleHour;
 import com.areatherm.design.ShelterDesign;
 import com.areatherm.design.ThermalMass;
 
@@ -38,10 +39,12 @@ public record ShelterDesignDetailResponse(
         BigDecimal groundTempC,
         List<OpeningResponse> windows,
         List<OpeningResponse> doors,
-        ThermalMassResponse thermalMass
+        ThermalMassResponse thermalMass,
+        List<ScheduleHourResponse> occupancySchedule
 ) {
 
-    public static ShelterDesignDetailResponse from(ShelterDesign d, List<Opening> windows, List<Opening> doors, ThermalMass thermalMass) {
+    public static ShelterDesignDetailResponse from(ShelterDesign d, List<Opening> windows, List<Opening> doors,
+                                                     ThermalMass thermalMass, List<OccupancyScheduleHour> occupancySchedule) {
         return new ShelterDesignDetailResponse(
                 d.getId(), d.getProject().getId(), d.getName(), d.getShape().name(),
                 d.getLengthM(), d.getWidthM(), d.getHeightM(), d.getDiameterM(),
@@ -57,7 +60,9 @@ public record ShelterDesignDetailResponse(
                 d.getInternalHeatGainW(), d.getGroundTempC(),
                 windows.stream().map(OpeningResponse::from).toList(),
                 doors.stream().map(OpeningResponse::from).toList(),
-                thermalMass != null ? ThermalMassResponse.from(thermalMass) : null
+                thermalMass != null ? ThermalMassResponse.from(thermalMass) : null,
+                occupancySchedule == null || occupancySchedule.isEmpty() ? null
+                    : occupancySchedule.stream().map(ScheduleHourResponse::from).toList()
         );
     }
 
@@ -75,6 +80,12 @@ public record ShelterDesignDetailResponse(
             return new ThermalMassResponse(
                     tm.getMaterial().getId(), tm.getMassKg(), tm.getSurfaceAreaM2(), tm.getExposure().name()
             );
+        }
+    }
+
+    public record ScheduleHourResponse(int hourOfDay, int occupancyCount, String occupancyActivity) {
+        public static ScheduleHourResponse from(OccupancyScheduleHour row) {
+            return new ScheduleHourResponse(row.getHourOfDay(), row.getOccupancyCount(), row.getOccupancyActivity().name());
         }
     }
 }

@@ -30,7 +30,7 @@ class OptimizationEngineSmokeTest {
             null, null, null, null,
             CompassOrientation.SOUTH, 0.0,
             wall, roof, floor, List.of(window), List.of(door),
-            0.8, mass, 2, new ActivityLevelSpec("SEATED", "Resting / Seated", 120, 0.75), 150, null, comfort
+            0.8, mass, 2, new ActivityLevelSpec("SEATED", "Resting / Seated", 120, 0.75), 150, null, comfort, null
         );
     }
 

@@ -38,7 +38,16 @@
     <flyingsaucer.version>9.4.0</flyingsaucer.version>
     <springdoc.version>2.9.1</springdoc.version>
     <archunit.version>1.5.0</archunit.version>
+    <netcdf.version>5.9.0</netcdf.version>
   </properties>
+
+  <repositories>
+    <!-- Unidata's netCDF-Java (cdm-core, below) isn't on Maven Central. -->
+    <repository>
+      <id>unidata-all</id>
+      <url>https://artifacts.unidata.ucar.edu/repository/unidata-all/</url>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
@@ -134,6 +143,21 @@
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
       <version>${springdoc.version}</version>
+    </dependency>
+
+    <!-- ERA5 data comes back from Copernicus CDS as NetCDF; see climate/era5/.
+         guava is cdm-core's own transitive dependency (its public API, e.g.
+         NetcdfFile.getVariables(), returns Guava collection types directly)
+         but isn't reliably pulled onto the compile classpath on its own. -->
+    <dependency>
+      <groupId>edu.ucar</groupId>
+      <artifactId>cdm-core</artifactId>
+      <version>${netcdf.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>33.3.1-jre</version>
     </dependency>
 
     <dependency>

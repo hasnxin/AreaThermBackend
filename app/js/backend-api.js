@@ -167,6 +167,12 @@ window.APP_BACKEND = (function () {
     return items;
   }
 
+  // ---- ERA5 (optional, opt-in real reanalysis data) -----------------------
+  function era5Availability() { return get("/climate/era5-fetch/availability"); }
+  function createEra5Fetch(payload) { return post("/climate/era5-fetch", payload); }
+  function getEra5Fetch(id) { return get("/climate/era5-fetch/" + id); }
+  function pollEra5Fetch(id, opts) { return pollUntilTerminal(() => getEra5Fetch(id), opts); }
+
   // ---- Optimization runs ------------------------------------------------
   function createOptimizationRun(payload) { return post("/optimization-runs", payload); }
   function getOptimizationRun(id) { return get("/optimization-runs/" + id); }
@@ -204,6 +210,7 @@ window.APP_BACKEND = (function () {
     createSimulation, getSimulation, pollSimulation, getFullSimulationSeries,
     createOptimizationRun, getOptimizationRun, pollOptimizationRun,
     createReport, getReport, downloadReportFile,
+    era5Availability, createEra5Fetch, getEra5Fetch, pollEra5Fetch,
     pollUntilTerminal
   };
 })();

@@ -32,6 +32,19 @@ class ThermalEngineGoldenFileTest {
         return new ActivityLevelSpec("SEATED", "Resting / Seated", 120, 0.75);
     }
 
+    private static ActivityLevelSpec sleeping() {
+        return new ActivityLevelSpec("SLEEPING", "Sleeping", 85, 0.90);
+    }
+
+    /** Matches tools/generate_physics_fixtures.js's observationPostSchedule() exactly. */
+    private static List<OccupancyScheduleEntry> observationPostSchedule() {
+        List<OccupancyScheduleEntry> sched = new java.util.ArrayList<>();
+        for (int h = 0; h < 24; h++) {
+            sched.add((h >= 6 && h < 22) ? new OccupancyScheduleEntry(2, seated()) : new OccupancyScheduleEntry(1, sleeping()));
+        }
+        return sched;
+    }
+
     /** app/js/store.js's defaultDesign() -- the reference baseline used for every fixture except the PCM/round variants. */
     private static Design baselineDesign() {
         EnvelopeLayer wall = new EnvelopeLayer(TestMaterials.wallInsulatedPanel(), 186, TestMaterials.insPuf(), 35.0);
@@ -46,7 +59,7 @@ class ThermalEngineGoldenFileTest {
             null, null, null, null,
             CompassOrientation.SOUTH, 0.0,
             wall, roof, floor, List.of(window), List.of(door),
-            0.8, mass, 2, seated(), 150, null, comfort
+            0.8, mass, 2, seated(), 150, null, comfort, null
         );
     }
 
@@ -139,7 +152,7 @@ class ThermalEngineGoldenFileTest {
             base.lengthA(), base.widthA(), base.lengthB(), base.widthB(),
             base.orientation(), base.azimuthDeg(), base.wall(), base.roof(), base.floor(), base.windows(), base.doors(),
             base.airLeakageAch(), new ThermalMassSpec(TestMaterials.massPcm(), 400, 5, MassExposure.WALL),
-            base.occupancy(), base.occupancyActivity(), base.internalHeatGainW(), base.groundTempC(), base.comfort()
+            base.occupancy(), base.occupancyActivity(), base.internalHeatGainW(), base.groundTempC(), base.comfort(), null
         );
         SimulationResult result = ThermalEngine.runSimulation(pcmDesign, winterSeason(), new SimConfig(60, SimConfig.PeriodType.TWENTY_FOUR_HOUR, 1));
         assertJsonClose("fixture2", fixtures().get("fixture2_60min_winter_pcm"), toComparableJson(result));
@@ -153,7 +166,7 @@ class ThermalEngineGoldenFileTest {
             base.lengthA(), base.widthA(), base.lengthB(), base.widthB(),
             base.orientation(), base.azimuthDeg(), base.wall(), base.roof(), base.floor(), base.windows(), base.doors(),
             base.airLeakageAch(), base.thermalMass(), base.occupancy(), base.occupancyActivity(),
-            base.internalHeatGainW(), base.groundTempC(), base.comfort()
+            base.internalHeatGainW(), base.groundTempC(), base.comfort(), null
         );
         SimulationResult result = ThermalEngine.runSimulation(roundDesign, winterSeason(), new SimConfig(60, SimConfig.PeriodType.TWENTY_FOUR_HOUR, 1));
         assertJsonClose("fixture3", fixtures().get("fixture3_60min_winter_round"), toComparableJson(result));
@@ -164,5 +177,29 @@ class ThermalEngineGoldenFileTest {
         SimulationResult result = ThermalEngine.runSimulation(baselineDesign(), summerSeason(), new SimConfig(60, SimConfig.PeriodType.TWENTY_FOUR_HOUR, 1));
         assertTrue(result.daily().coolingReqKwh() > 0, "summer fixture must exercise the cooling-dominant path");
         assertJsonClose("fixture4", fixtures().get("fixture4_60min_summer_rectangular"), toComparableJson(result));
+    }
+
+    /**
+     * Exercises Design.occupancySchedule() -- an observation-post pattern
+     * (2 persons SEATED 06:00-22:00, 1 person SLEEPING overnight),
+     * deliberately different from the flat baseline (occupancy=2, SEATED
+     * always) so this actually proves the hour-varying path, not just that
+     * it falls back correctly. Captured from the real app/js/engine.js by
+     * tools/generate_physics_fixtures.js -- see that script's
+     * observationPostSchedule() for the exact JS-side equivalent.
+     */
+    @Test
+    void fixture5_60min_winter_occupancySchedule() throws Exception {
+        Design base = baselineDesign();
+        Design scheduleDesign = new Design(
+            base.name(), base.shape(), base.length(), base.width(), base.height(), base.diameter(),
+            base.lengthA(), base.widthA(), base.lengthB(), base.widthB(),
+            base.orientation(), base.azimuthDeg(), base.wall(), base.roof(), base.floor(), base.windows(), base.doors(),
+            base.airLeakageAch(), base.thermalMass(), base.occupancy(), base.occupancyActivity(),
+            base.internalHeatGainW(), base.groundTempC(), base.comfort(), observationPostSchedule()
+        );
+        SimulationResult result = ThermalEngine.runSimulation(scheduleDesign, winterSeason(), new SimConfig(60, SimConfig.PeriodType.TWENTY_FOUR_HOUR, 1));
+        assertTrue(result.occupancy().scheduled(), "schedule-bearing design must report occupancy.scheduled=true");
+        assertJsonClose("fixture5", fixtures().get("fixture5_60min_winter_occupancySchedule"), toComparableJson(result));
     }
 }

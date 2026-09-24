@@ -30,7 +30,7 @@ public record SimulationResult(
     public record OccupancyResult(int persons, String activityLabel, double totalW, double sensibleW,
                                    double latentW, double equipmentW, double latentKgPerHour,
                                    double sensibleKwhPerDay, double occupancyVentLossKwhPerDay,
-                                   double netOccupancyEffectKwh, String note) {
+                                   double netOccupancyEffectKwh, String note, boolean scheduled) {
     }
 
     public record DailyResult(double solarKwh, double wallLossKwh, double roofLossKwh, double floorLossKwh,

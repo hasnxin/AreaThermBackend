@@ -122,7 +122,7 @@ public final class OptimizationEngine {
             d.lengthA(), d.widthA(), d.lengthB(), d.widthB(),
             orientation, azimuthDeg, wall, roof, d.floor(), d.windows(), d.doors(),
             d.airLeakageAch(), d.thermalMass(), d.occupancy(), d.occupancyActivity(),
-            d.internalHeatGainW(), d.groundTempC(), d.comfort()
+            d.internalHeatGainW(), d.groundTempC(), d.comfort(), d.occupancySchedule()
         );
     }
 
@@ -132,7 +132,7 @@ public final class OptimizationEngine {
             d.lengthA(), d.widthA(), d.lengthB(), d.widthB(),
             d.orientation(), d.azimuthDeg(), d.wall(), d.roof(), d.floor(), windows, d.doors(),
             d.airLeakageAch(), thermalMass, d.occupancy(), d.occupancyActivity(),
-            d.internalHeatGainW(), d.groundTempC(), d.comfort()
+            d.internalHeatGainW(), d.groundTempC(), d.comfort(), d.occupancySchedule()
         );
     }
 
@@ -390,7 +390,7 @@ public final class OptimizationEngine {
                 new EnvelopeLayer(d.wall().material(), d.wall().thicknessMm(), d.wall().insulationMaterial(), orDefault(d.wall().insulationThicknessMm(), 75) + 50),
                 new EnvelopeLayer(d.roof().material(), d.roof().thicknessMm(), d.roof().insulationMaterial(), orDefault(d.roof().insulationThicknessMm(), 75) + 50),
                 d.floor(), d.windows(), d.doors(), d.airLeakageAch(), d.thermalMass(), d.occupancy(), d.occupancyActivity(),
-                d.internalHeatGainW(), d.groundTempC(), d.comfort()
+                d.internalHeatGainW(), d.groundTempC(), d.comfort(), d.occupancySchedule()
             )),
             new Perturbation("Orientation", d -> withWallRoofOrientation(d, d.wall(), d.roof(), CompassOrientation.SOUTH, 0.0)),
             new Perturbation("Window area", d -> withWindowsAndMass(d,
@@ -403,7 +403,7 @@ public final class OptimizationEngine {
                 d.orientation(), d.azimuthDeg(),
                 new EnvelopeLayer(catalog.get("wall_composite"), d.wall().thicknessMm(), d.wall().insulationMaterial(), d.wall().insulationThicknessMm()),
                 d.roof(), d.floor(), d.windows(), d.doors(), d.airLeakageAch(), d.thermalMass(), d.occupancy(), d.occupancyActivity(),
-                d.internalHeatGainW(), d.groundTempC(), d.comfort()
+                d.internalHeatGainW(), d.groundTempC(), d.comfort(), d.occupancySchedule()
             )),
             new Perturbation("Glazing type", d -> withWindowsAndMass(d,
                 d.windows().stream().map(w -> new Opening(w.areaEach(), w.count(), w.face(), catalog.get("glaze_triple"))).toList(),
@@ -412,7 +412,7 @@ public final class OptimizationEngine {
                 d.name(), d.shape(), d.length(), d.width(), orDefault(d.height(), 3) * 1.15, d.diameter(), d.lengthA(), d.widthA(), d.lengthB(), d.widthB(),
                 d.orientation(), d.azimuthDeg(), d.wall(), d.roof(), d.floor(), d.windows(), d.doors(),
                 d.airLeakageAch(), d.thermalMass(), d.occupancy(), d.occupancyActivity(),
-                d.internalHeatGainW(), d.groundTempC(), d.comfort()
+                d.internalHeatGainW(), d.groundTempC(), d.comfort(), d.occupancySchedule()
             ))
         );
 

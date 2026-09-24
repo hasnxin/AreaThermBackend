@@ -1,6 +1,5 @@
 {
   "fixture0_60min_winter_baseline": {
-    "name": "60-min timestep, winter, rectangular (known baseline)",
     "geometry": {
       "L": 6,
       "W": 4,
@@ -54,6 +53,7 @@
       "latentW": 60,
       "equipmentW": 150,
       "latentKgPerHour": 0.088,
+      "scheduled": false,
       "sensibleKwhPerDay": 4.32,
       "occupancyVentLossKwhPerDay": 1.55,
       "netOccupancyEffectKwh": 2.77,
@@ -173,7 +173,6 @@
     ]
   },
   "fixture1_15min_winter_rectangular": {
-    "name": "15-min timestep, winter, rectangular",
     "geometry": {
       "L": 6,
       "W": 4,
@@ -227,6 +226,7 @@
       "latentW": 60,
       "equipmentW": 150,
       "latentKgPerHour": 0.088,
+      "scheduled": false,
       "sensibleKwhPerDay": 4.32,
       "occupancyVentLossKwhPerDay": 1.61,
       "netOccupancyEffectKwh": 2.71,
@@ -346,7 +346,6 @@
     ]
   },
   "fixture2_60min_winter_pcm": {
-    "name": "60-min timestep, winter, PCM mass",
     "geometry": {
       "L": 6,
       "W": 4,
@@ -400,6 +399,7 @@
       "latentW": 60,
       "equipmentW": 150,
       "latentKgPerHour": 0.088,
+      "scheduled": false,
       "sensibleKwhPerDay": 4.32,
       "occupancyVentLossKwhPerDay": 1.81,
       "netOccupancyEffectKwh": 2.51,
@@ -519,7 +519,6 @@
     ]
   },
   "fixture3_60min_winter_round": {
-    "name": "60-min timestep, winter, round/circular shape",
     "geometry": {
       "L": 6,
       "W": 6,
@@ -558,6 +557,7 @@
       "latentW": 60,
       "equipmentW": 150,
       "latentKgPerHour": 0.088,
+      "scheduled": false,
       "sensibleKwhPerDay": 4.32,
       "occupancyVentLossKwhPerDay": 1.2,
       "netOccupancyEffectKwh": 3.12,
@@ -677,7 +677,6 @@
     ]
   },
   "fixture4_60min_summer_rectangular": {
-    "name": "60-min timestep, summer, rectangular",
     "geometry": {
       "L": 6,
       "W": 4,
@@ -731,6 +730,7 @@
       "latentW": 60,
       "equipmentW": 150,
       "latentKgPerHour": 0.088,
+      "scheduled": false,
       "sensibleKwhPerDay": 4.32,
       "occupancyVentLossKwhPerDay": 1.04,
       "netOccupancyEffectKwh": 3.28,
@@ -846,6 +846,179 @@
         "qInternal": 330,
         "qNet": -29.18,
         "inComfort": true
+      }
+    ]
+  },
+  "fixture5_60min_winter_occupancySchedule": {
+    "geometry": {
+      "L": 6,
+      "W": 4,
+      "H": 3,
+      "floorArea": 24,
+      "roofArea": 24,
+      "wallArea": 60,
+      "volume": 72,
+      "faces": [
+        {
+          "name": "FRONT",
+          "areaM2": 18,
+          "factor": 1
+        },
+        {
+          "name": "BACK",
+          "areaM2": 18,
+          "factor": 0.15
+        },
+        {
+          "name": "LEFT",
+          "areaM2": 12,
+          "factor": 0.55
+        },
+        {
+          "name": "RIGHT",
+          "areaM2": 12,
+          "factor": 0.55
+        }
+      ],
+      "frontAzimuth": 0
+    },
+    "uValues": {
+      "wall": 0.10222676563402817,
+      "roof": 0.1292927228127555,
+      "floor": 1.75
+    },
+    "netWallArea": 55.290000000000006,
+    "windowArea": 2.91,
+    "doorArea": 1.8,
+    "ach": {
+      "infiltration": 0.91,
+      "occupancy": 0.63,
+      "total": 1.54
+    },
+    "occupancy": {
+      "persons": 2,
+      "activityLabel": "Scheduled (varies by hour)",
+      "totalW": 188.33,
+      "sensibleW": 145.5,
+      "latentW": 42.83,
+      "equipmentW": 150,
+      "latentKgPerHour": 0.063,
+      "scheduled": true,
+      "sensibleKwhPerDay": 3.49,
+      "occupancyVentLossKwhPerDay": 1.37,
+      "netOccupancyEffectKwh": 2.12,
+      "note": "Occupants add more sensible heat than the occupancy-linked ventilation removes (net +2.12 kWh/day)."
+    },
+    "daily": {
+      "solarKwh": 13.33,
+      "wallLossKwh": 0.06,
+      "roofLossKwh": 0.03,
+      "floorLossKwh": 16.45,
+      "openingLossKwh": 1.6,
+      "ventLossKwh": 3.12,
+      "occupancyVentLossKwh": 1.37,
+      "massExchangeKwh": -0.43,
+      "internalKwh": 7.09,
+      "equipmentKwh": 3.6,
+      "occupantSensibleKwh": 3.49,
+      "totalLossKwh": 21.26,
+      "netKwh": -0.84,
+      "heatingReqKwh": 7.63,
+      "coolingReqKwh": 0
+    },
+    "comfort": {
+      "comfortHoursPerDay": 10,
+      "dayComfortPct": 71.43,
+      "nightComfortPct": 0,
+      "minIndoor": 5.29,
+      "maxIndoor": 23.74,
+      "avgIndoor": 13.57,
+      "avgExcessOutOfBandC": 6.44,
+      "inBandPct": 35.71
+    },
+    "scores": {
+      "comfortScore": 39.98,
+      "heatRetentionPct": 98.05,
+      "solarUtilizationPct": 85,
+      "thermalComfortScore": 68
+    },
+    "seriesLength": 24,
+    "seriesSample": [
+      {
+        "hourDecimal": 0,
+        "stepIndex": 0,
+        "tAmb": 6.11,
+        "tIndoor": 6.9,
+        "tMass": 9.92,
+        "gHoriz": 0,
+        "qSolarWindow": 0,
+        "qWall": 4.44,
+        "qRoof": 2.44,
+        "qFloor": 405.25,
+        "qWindowCond": 13.26,
+        "qDoorCond": 2.54,
+        "qVent": 24.35,
+        "qMassExchange": -144.95,
+        "qInternal": 226.5,
+        "qNet": -80.83,
+        "inComfort": false
+      },
+      {
+        "hourDecimal": 6,
+        "stepIndex": 6,
+        "tAmb": 6.11,
+        "tIndoor": 6.5,
+        "tMass": 7.99,
+        "gHoriz": 15.77,
+        "qSolarWindow": 39,
+        "qWall": 0.77,
+        "qRoof": -0.28,
+        "qFloor": 388.67,
+        "qWindowCond": 6.59,
+        "qDoorCond": 1.27,
+        "qVent": 15.65,
+        "qMassExchange": -70.37,
+        "qInternal": 330,
+        "qNet": 26.7,
+        "inComfort": false
+      },
+      {
+        "hourDecimal": 12,
+        "stepIndex": 12,
+        "tAmb": 14.39,
+        "tIndoor": 22.63,
+        "tMass": 15.58,
+        "gHoriz": 649.44,
+        "qSolarWindow": 1606.39,
+        "qWall": -12.47,
+        "qRoof": -35.83,
+        "qFloor": 1065.79,
+        "qWindowCond": 139.06,
+        "qDoorCond": 26.7,
+        "qVent": 329.98,
+        "qMassExchange": 381.84,
+        "qInternal": 330,
+        "qNet": 41.32,
+        "inComfort": true
+      },
+      {
+        "hourDecimal": 23,
+        "stepIndex": 23,
+        "tAmb": 7.33,
+        "tIndoor": 9.21,
+        "tMass": 16.85,
+        "gHoriz": 0,
+        "qSolarWindow": 0,
+        "qWall": 10.65,
+        "qRoof": 5.85,
+        "qFloor": 502.31,
+        "qWindowCond": 31.81,
+        "qDoorCond": 6.11,
+        "qVent": 58.43,
+        "qMassExchange": -366.7,
+        "qInternal": 226.5,
+        "qNet": -21.96,
+        "inComfort": false
       }
     ]
   }

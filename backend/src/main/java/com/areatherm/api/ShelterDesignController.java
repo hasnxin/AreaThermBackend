@@ -2,11 +2,16 @@ package com.areatherm.api;
 
 import com.areatherm.api.dto.CreateShelterDesignRequest;
 import com.areatherm.api.dto.ShelterDesignDetailResponse;
+import com.areatherm.climate.Location;
+import com.areatherm.climate.LocationRepository;
 import com.areatherm.design.*;
 import com.areatherm.material.Material;
 import com.areatherm.material.MaterialRepository;
 import com.areatherm.project.Project;
 import com.areatherm.project.ProjectRepository;
+import com.areatherm.thermal.ThermalEngine;
+import com.areatherm.thermal.model.CostBreakdownResult;
+import com.areatherm.thermal.model.Design;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -36,16 +41,24 @@ public class ShelterDesignController {
     private final MaterialRepository materialRepository;
     private final ComfortProfileRepository comfortProfileRepository;
     private final ProjectRepository projectRepository;
+    private final LocationRepository locationRepository;
+    private final ShelterDesignService shelterDesignService;
+    private final OccupancyScheduleHourRepository occupancyScheduleHourRepository;
 
     public ShelterDesignController(ShelterDesignRepository shelterDesignRepository, OpeningRepository openingRepository,
                                     ThermalMassRepository thermalMassRepository, MaterialRepository materialRepository,
-                                    ComfortProfileRepository comfortProfileRepository, ProjectRepository projectRepository) {
+                                    ComfortProfileRepository comfortProfileRepository, ProjectRepository projectRepository,
+                                    LocationRepository locationRepository, ShelterDesignService shelterDesignService,
+                                    OccupancyScheduleHourRepository occupancyScheduleHourRepository) {
         this.shelterDesignRepository = shelterDesignRepository;
         this.openingRepository = openingRepository;
         this.thermalMassRepository = thermalMassRepository;
         this.materialRepository = materialRepository;
         this.comfortProfileRepository = comfortProfileRepository;
         this.projectRepository = projectRepository;
+        this.locationRepository = locationRepository;
+        this.shelterDesignService = shelterDesignService;
+        this.occupancyScheduleHourRepository = occupancyScheduleHourRepository;
     }
 
     @GetMapping("/projects/{projectId}/shelter-designs")
@@ -70,7 +83,7 @@ public class ShelterDesignController {
         ShelterDesign saved = shelterDesignRepository.save(applyRequest(new ShelterDesign(), req, project, comfortProfile));
         ChildRows children = createChildRows(saved, req);
 
-        return ShelterDesignDetailResponse.from(saved, children.windows(), children.doors(), children.thermalMass());
+        return ShelterDesignDetailResponse.from(saved, children.windows(), children.doors(), children.thermalMass(), children.occupancySchedule());
     }
 
     @GetMapping("/shelter-designs/{id}")
@@ -81,7 +94,28 @@ public class ShelterDesignController {
         List<Opening> windows = openings.stream().filter(o -> o.getOpeningType() == Opening.OpeningType.WINDOW).toList();
         List<Opening> doors = openings.stream().filter(o -> o.getOpeningType() == Opening.OpeningType.DOOR).toList();
         ThermalMass thermalMass = thermalMassRepository.findByShelterDesignId(id).orElse(null);
-        return ShelterDesignDetailResponse.from(d, windows, doors, thermalMass);
+        List<OccupancyScheduleHour> schedule = occupancyScheduleHourRepository.findByShelterDesignIdOrderByHourOfDay(id);
+        return ShelterDesignDetailResponse.from(d, windows, doors, thermalMass, schedule);
+    }
+
+    // estimateCost/estimateCostBreakdown were previously reachable only
+    // from inside a full optimization run (OptimizationEngine's per-
+    // candidate scoring) -- this exposes a location-aware cost breakdown
+    // for one already-saved design on its own, matching the frontend's own
+    // ENGINE.estimateCostBreakdown(design, location) (app/js/engine.js).
+    @GetMapping("/shelter-designs/{id}/cost-estimate")
+    @Transactional(readOnly = true)
+    public CostBreakdownResult costEstimate(@PathVariable Long id) {
+        ShelterDesign d = shelterDesignRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No shelter design with id " + id));
+        Design design = shelterDesignService.toDesign(d);
+        // First location on this design's project, matching how the
+        // frontend always has exactly one "current" location in play --
+        // a design with no location yet gets elevation 0 (every multiplier
+        // reduces to 1, same total as the plain estimateCost()).
+        double elevationM = locationRepository.findByProjectId(d.getProject().getId()).stream()
+            .findFirst().map(Location::getElevationM).map(BigDecimal::doubleValue).orElse(0.0);
+        return ThermalEngine.estimateCostBreakdown(design, elevationM);
     }
 
     @PutMapping("/shelter-designs/{id}")
@@ -124,13 +158,18 @@ public class ShelterDesignController {
             thermalMassRepository.delete(tm);
             d.setThermalMass(null);
         });
+        List<OccupancyScheduleHour> existingSchedule = occupancyScheduleHourRepository.findByShelterDesignIdOrderByHourOfDay(id);
+        if (!existingSchedule.isEmpty()) {
+            occupancyScheduleHourRepository.deleteAll(existingSchedule);
+        }
         openingRepository.flush();
         thermalMassRepository.flush();
+        occupancyScheduleHourRepository.flush();
 
         ShelterDesign saved = shelterDesignRepository.save(applyRequest(d, req, d.getProject(), comfortProfile));
         ChildRows children = createChildRows(saved, req);
 
-        return ShelterDesignDetailResponse.from(saved, children.windows(), children.doors(), children.thermalMass());
+        return ShelterDesignDetailResponse.from(saved, children.windows(), children.doors(), children.thermalMass(), children.occupancySchedule());
     }
 
     /** Scalar-field mapping shared by create() and update() -- everything except the child Opening/ThermalMass rows. */
@@ -183,10 +222,10 @@ public class ShelterDesignController {
         return d;
     }
 
-    private record ChildRows(List<Opening> windows, List<Opening> doors, ThermalMass thermalMass) {
+    private record ChildRows(List<Opening> windows, List<Opening> doors, ThermalMass thermalMass, List<OccupancyScheduleHour> occupancySchedule) {
     }
 
-    /** Creates the Opening/ThermalMass child rows for an already-saved design -- shared by create() and update(). */
+    /** Creates the Opening/ThermalMass/occupancy-schedule child rows for an already-saved design -- shared by create() and update(). */
     private ChildRows createChildRows(ShelterDesign saved, CreateShelterDesignRequest req) {
         List<Opening> windows = new ArrayList<>();
         for (CreateShelterDesignRequest.OpeningRequest w : req.windows() != null ? req.windows() : List.<CreateShelterDesignRequest.OpeningRequest>of()) {
@@ -209,7 +248,23 @@ public class ShelterDesignController {
             tm.setPcm(tm.getMaterial().getPcmMeltTempC() != null);
             thermalMass = thermalMassRepository.save(tm);
         }
-        return new ChildRows(windows, doors, thermalMass);
+        List<OccupancyScheduleHour> schedule = new ArrayList<>();
+        if (req.occupancySchedule() != null) {
+            if (req.occupancySchedule().size() != 24) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "occupancySchedule must have exactly 24 entries (one per hour), got " + req.occupancySchedule().size());
+            }
+            for (int h = 0; h < 24; h++) {
+                CreateShelterDesignRequest.ScheduleHourRequest hourReq = req.occupancySchedule().get(h);
+                OccupancyScheduleHour row = new OccupancyScheduleHour();
+                row.setShelterDesign(saved);
+                row.setHourOfDay(h);
+                row.setOccupancyCount(hourReq.occupancyCount());
+                row.setOccupancyActivity(parseEnum(ShelterDesign.OccupancyActivity.class, hourReq.occupancyActivity(), "occupancySchedule[" + h + "].occupancyActivity"));
+                schedule.add(occupancyScheduleHourRepository.save(row));
+            }
+        }
+        return new ChildRows(windows, doors, thermalMass, schedule);
     }
 
     private Material requireMaterial(Long id) {

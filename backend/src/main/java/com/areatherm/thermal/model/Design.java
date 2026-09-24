@@ -26,6 +26,11 @@ public record Design(
     ActivityLevelSpec occupancyActivity,
     double internalHeatGainW,
     Double groundTempC,
-    ComfortSpec comfort
+    ComfortSpec comfort,
+    // Optional 24-entry hour-indexed alternative to the flat
+    // occupancy/occupancyActivity pair above -- null (the common case)
+    // means "use the flat pair for the whole run", exactly like today.
+    // See ThermalEngine.occupancyForHour().
+    List<OccupancyScheduleEntry> occupancySchedule
 ) {
 }

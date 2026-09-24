@@ -34,13 +34,16 @@ public class ShelterDesignService {
     private final ShelterDesignRepository shelterDesignRepository;
     private final OpeningRepository openingRepository;
     private final ThermalMassRepository thermalMassRepository;
+    private final OccupancyScheduleHourRepository occupancyScheduleHourRepository;
     private final MaterialLibraryService materialLibraryService;
 
     public ShelterDesignService(ShelterDesignRepository shelterDesignRepository, OpeningRepository openingRepository,
-                                 ThermalMassRepository thermalMassRepository, MaterialLibraryService materialLibraryService) {
+                                 ThermalMassRepository thermalMassRepository, OccupancyScheduleHourRepository occupancyScheduleHourRepository,
+                                 MaterialLibraryService materialLibraryService) {
         this.shelterDesignRepository = shelterDesignRepository;
         this.openingRepository = openingRepository;
         this.thermalMassRepository = thermalMassRepository;
+        this.occupancyScheduleHourRepository = occupancyScheduleHourRepository;
         this.materialLibraryService = materialLibraryService;
     }
 
@@ -77,6 +80,17 @@ public class ShelterDesignService {
             entity.getOccupancyActivity() != null ? entity.getOccupancyActivity() : ShelterDesign.OccupancyActivity.SEATED
         );
 
+        // 0 rows (the common case) -> null, meaning "use the flat
+        // occupancy/occupancyActivity above for the whole run" -- see
+        // ThermalEngine.occupancyForHour(). Exactly 24 rows or nothing:
+        // there's no partial-schedule concept, matching how the frontend
+        // only ever writes a full 24-entry array (see data.js
+        // OCCUPANCY_SCHEDULES) or leaves the field unset entirely.
+        List<OccupancyScheduleHour> scheduleRows = occupancyScheduleHourRepository.findByShelterDesignIdOrderByHourOfDay(entity.getId());
+        List<OccupancyScheduleEntry> occupancySchedule = scheduleRows.isEmpty() ? null : scheduleRows.stream()
+            .map(row -> new OccupancyScheduleEntry(row.getOccupancyCount(), ACTIVITY_LEVELS.get(row.getOccupancyActivity())))
+            .toList();
+
         return new Design(
             entity.getName(), toShape(entity.getShape()),
             toDouble(entity.getLengthM()), toDouble(entity.getWidthM()), toDouble(entity.getHeightM()), toDouble(entity.getDiameterM()),
@@ -92,7 +106,7 @@ public class ShelterDesignService {
             activity,
             entity.getInternalHeatGainW() != null ? entity.getInternalHeatGainW().doubleValue() : 0,
             entity.getGroundTempC() != null ? entity.getGroundTempC().doubleValue() : null,
-            comfort
+            comfort, occupancySchedule
         );
     }
 
@@ -159,6 +173,17 @@ public class ShelterDesignService {
             tm.setExposure(ThermalMass.Exposure.valueOf(design.thermalMass().exposure().name()));
             tm.setPcm(design.thermalMass().material().pcmMeltC() != null);
             thermalMassRepository.save(tm);
+        }
+        if (design.occupancySchedule() != null) {
+            for (int h = 0; h < design.occupancySchedule().size(); h++) {
+                OccupancyScheduleEntry entry = design.occupancySchedule().get(h);
+                OccupancyScheduleHour row = new OccupancyScheduleHour();
+                row.setShelterDesign(saved);
+                row.setHourOfDay(h);
+                row.setOccupancyCount(entry.persons());
+                row.setOccupancyActivity(ShelterDesign.OccupancyActivity.valueOf(entry.activity().id()));
+                occupancyScheduleHourRepository.save(row);
+            }
         }
         return saved;
     }
