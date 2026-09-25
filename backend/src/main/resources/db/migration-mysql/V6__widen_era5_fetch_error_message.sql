@@ -1,0 +1,12 @@
+-- A real CDS error response can be a multi-hundred-character JSON/HTML body
+-- (see Era5Client's error formatting) -- 1000 chars was too tight and caused
+-- a secondary failure (truncation) that masked the real underlying error.
+--
+-- MySQL-flavored variant of this migration: MySQL has no ALTER COLUMN form
+-- for changing a column's type (only SET/DROP DEFAULT), so it needs MODIFY
+-- COLUMN with the full column definition -- confirmed directly against a
+-- real MySQL 8 container, where the H2-flavored ALTER COLUMN <type> form
+-- (see db/migration/h2/ for that version) fails with a syntax error at
+-- "VARCHAR(4000)". Selected by profile via flyway.locations (see
+-- application-docker.yml) rather than kept as one shared file.
+ALTER TABLE era5_fetch MODIFY COLUMN error_message VARCHAR(4000);

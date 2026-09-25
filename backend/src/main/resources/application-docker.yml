@@ -8,4 +8,6 @@ spring:
     username: ${AREATHERM_DB_USER:areatherm}
     password: ${AREATHERM_DB_PASSWORD:areatherm}
   flyway:
-    locations: classpath:db/migration
+    # See application.yml's flyway.locations comment -- db/migration-mysql
+    # is a sibling of db/migration, not a subdirectory of it.
+    locations: classpath:db/migration,classpath:db/migration-mysql

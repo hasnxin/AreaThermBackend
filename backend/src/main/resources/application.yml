@@ -19,7 +19,18 @@ spring:
         order_updates: true
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    # db/migration-<vendor> holds the handful of migrations whose SQL isn't
+    # portable across H2/MySQL (currently just V6 -- ALTER COLUMN's type-
+    # change syntax differs between them); everything vendor-neutral stays
+    # in db/migration itself. Deliberately a SIBLING of db/migration, not a
+    # subdirectory of it -- Flyway scans a classpath location recursively,
+    # so classpath:db/migration alone would already sweep in a nested
+    # db/migration/h2 (and db/migration/mysql) regardless of this second
+    # entry, and both vendor variants of V6 would be resolved at once
+    # ("Found more than one migration with version 6"). Confirmed directly
+    # against a real build after that exact failure. See
+    # application-docker.yml for the MySQL side.
+    locations: classpath:db/migration,classpath:db/migration-h2
   cache:
     type: simple
   mail:
