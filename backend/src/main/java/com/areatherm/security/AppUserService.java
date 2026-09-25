@@ -45,6 +45,12 @@ public class AppUserService implements UserDetailsService {
      *         racing past that check still surfaces as this exception rather
      *         than a raw {@link DataIntegrityViolationException} from the
      *         table's unique constraint.
+     *
+     *         When no SMTP credentials are configured ({@link MailProperties#isConfigured()}
+     *         is false), no verification code is issued at all -- the account is
+     *         auto-verified immediately, since a code sent nowhere would only ever
+     *         lock the user out. See {@link UserResponse#emailVerified} for how the
+     *         frontend detects this and skips straight past the verify-email step.
      */
     @Transactional
     public AppUser register(String email, String displayName, String rawPassword, AppUser.UserRole role) {
@@ -57,7 +63,11 @@ public class AppUserService implements UserDetailsService {
         user.setDisplayName(displayName);
         user.setRole(role != null ? role : AppUser.UserRole.ENGINEER);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
-        applyFreshVerificationCode(user);
+        if (mailProperties.isConfigured()) {
+            applyFreshVerificationCode(user);
+        } else {
+            user.setEmailVerified(true);
+        }
 
         AppUser saved;
         try {
@@ -65,7 +75,9 @@ public class AppUserService implements UserDetailsService {
         } catch (DataIntegrityViolationException ex) {
             throw new EmailAlreadyRegisteredException(email, ex);
         }
-        emailService.sendVerificationCodeAsync(saved.getEmail(), saved.getVerificationCode());
+        if (mailProperties.isConfigured()) {
+            emailService.sendVerificationCodeAsync(saved.getEmail(), saved.getVerificationCode());
+        }
         return saved;
     }
 

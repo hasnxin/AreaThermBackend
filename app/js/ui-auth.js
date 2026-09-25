@@ -107,10 +107,18 @@ window.UI = window.UI || {};
       btn.disabled = true;
       btn.classList.add("is-loading");
       try {
-        await BACKEND.register({ email: email, displayName: displayName, password: password });
-        pendingVerificationEmail = email;
-        window.APP.toast("Account created — check your email for a verification code.");
-        window.APP.navigate("verify-email");
+        const user = await BACKEND.register({ email: email, displayName: displayName, password: password });
+        if (user.emailVerified) {
+          // Backend auto-verifies when no SMTP is configured (see AppUserService.register) --
+          // there's no code to wait for, so sign straight in instead of showing a dead-end screen.
+          await BACKEND.login(email, password);
+          window.APP.toast("Account created — signed in.");
+          window.APP.navigate("dashboard");
+        } else {
+          pendingVerificationEmail = email;
+          window.APP.toast("Account created — check your email for a verification code.");
+          window.APP.navigate("verify-email");
+        }
       } catch (e) {
         statusEl.hidden = false;
         statusEl.textContent = e.status === 409 ? "An account with that email already exists." : ("Could not create account: " + e.message);

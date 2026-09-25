@@ -23,4 +23,16 @@ public class MailProperties {
 
     /** How long a freshly issued verification code stays valid. */
     private long verificationCodeExpiryMinutes;
+
+    /**
+     * True once a real "from" address is set (i.e. {@code AREATHERM_MAIL_USERNAME}
+     * is populated) -- used by {@link AppUserService} to decide whether issuing a
+     * verification code makes sense at all. With no SMTP credentials configured,
+     * {@link EmailService} would only ever log a swallowed send failure and the
+     * user would be stuck with a code that never arrives, so registration skips
+     * the code and auto-verifies instead.
+     */
+    public boolean isConfigured() {
+        return from != null && !from.isBlank();
+    }
 }
