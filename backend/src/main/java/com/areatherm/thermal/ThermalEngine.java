@@ -95,6 +95,20 @@ public final class ThermalEngine {
         return orientationFactorFromAngle(angle, latitude);
     }
 
+    public static double incidentAngleModifier(double hourDecimal, double faceOffsetDeg, Double latitude) {
+        double hr = ((hourDecimal % 24) + 24) % 24;
+        if (hr < 5 || hr > 19) return 0.92;
+        double omega = Math.toRadians((hr - 12) * 15);
+        double lat = Math.toRadians(latitude != null && Double.isFinite(latitude) ? latitude : 34.15);
+        double dec = Math.toRadians(-10.0);
+        double sinAlt = Math.max(0, Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(omega));
+        double cosAlt = Math.sqrt(Math.max(0, 1 - sinAlt * sinAlt));
+        double offRad = Math.toRadians(faceOffsetDeg);
+        double cosInc = Math.max(0.1, cosAlt * Math.cos(omega - offRad));
+        double iam = 1.0 - 0.08 * (1.0 / cosInc - 1.0);
+        return Math.max(0.60, Math.min(1.0, iam));
+    }
+
     // ---- Input validation ---------------------------------------------------
     public static ValidationResult validateDesign(Design design) {
         List<String> errors = new ArrayList<>();
@@ -473,6 +487,7 @@ public final class ThermalEngine {
         double wallAbsorptivity = wallMat != null ? wallMat.absorptivityOrDefault(0.6) : 0.6;
         MaterialProperties roofMat = design.roof().material();
         double roofAbsorptivity = roofMat != null ? roofMat.absorptivityOrDefault(0.6) : 0.6;
+        double roofEmissivity = roofMat != null ? roofMat.emissivityOrDefault(0.9) : 0.9;
         double tGround = design.groundTempC() != null ? design.groundTempC() : estimateGroundTempC(season);
 
         int timeStepMinutes = simConfig.timeStepMinutes() > 0 ? simConfig.timeStepMinutes() : 60;
@@ -497,7 +512,7 @@ public final class ThermalEngine {
             double hourDecimal = (i * dtSec / 3600.0) % 24;
             double tAmb = ambientTempAt(season, hourDecimal);
             double gHoriz = solarIrradianceAt(season, hourDecimal);
-            double hOuterNow = windAdjustedFilmCoefficient(windSpeedAt(season, hourDecimal));
+            double hOuterNow = Math.max(1.0, windAdjustedFilmCoefficient(windSpeedAt(season, hourDecimal)));
 
             double wallUA = 0, wallRefSum = 0;
             for (int fi = 0; fi < geom.faces().size(); fi++) {
@@ -508,7 +523,8 @@ public final class ThermalEngine {
                 wallUA += uWall * solidArea;
                 wallRefSum += uWall * solidArea * tSolAir;
             }
-            double tSolAirRoof = tAmb + (roofAbsorptivity * gHoriz) / hOuterNow;
+            // ASHRAE longwave sky radiation depression on horizontal roof: ΔR_sky ≈ 60 W/m²
+            double tSolAirRoof = tAmb + (roofAbsorptivity * gHoriz - roofEmissivity * 60.0) / hOuterNow;
             double roofUA = uRoof * geom.roofArea(), roofRef = roofUA * tSolAirRoof;
             double floorUA = uFloor * geom.floorArea(), floorRef = floorUA * tGround;
 
@@ -521,7 +537,8 @@ public final class ThermalEngine {
                     case RIGHT -> 90;
                 };
                 double f = faceFactor(geom.frontAzimuth(), off, season.latitude());
-                qSolarWindow += w.totalArea() * gHoriz * f * w.shgc();
+                double iam = incidentAngleModifier(hourDecimal, off, season.latitude());
+                qSolarWindow += w.totalArea() * gHoriz * f * w.shgc() * iam;
                 windowCondUA += w.uValue() * w.totalArea();
             }
             double windowCondRef = windowCondUA * tAmb;
@@ -536,7 +553,7 @@ public final class ThermalEngine {
             double totalUA = wallUA + roofUA + floorUA + windowCondUA + doorUA + ventUA + massUA;
             double totalRef = wallRefSum + roofRef + floorRef + windowCondRef + doorRef + ventRef + massRef + qSolarWindow + qInternal;
             double cDt = cAir / dtSec;
-            double nextTair = (cDt * tAir + totalRef) / (cDt + totalUA);
+            double nextTair = (cDt + totalUA) > 1e-6 ? (cDt * tAir + totalRef) / (cDt + totalUA) : tAir;
 
             double qWall = wallUA * nextTair - wallRefSum;
             double qRoof = roofUA * nextTair - roofRef;
@@ -555,7 +572,7 @@ public final class ThermalEngine {
                     effectiveCMass = cMass + (tm.massKg() * massMat.pcmLatentJKg()) / 3;
                 }
                 double cMassDt = effectiveCMass / dtSec;
-                nextTmass = (cMassDt * tMass + massUA * nextTair + solarToMass) / (cMassDt + massUA);
+                nextTmass = (cMassDt + massUA) > 1e-6 ? (cMassDt * tMass + massUA * nextTair + solarToMass) / (cMassDt + massUA) : tMass;
             }
 
             boolean inComfort = nextTair >= design.comfort().min() && nextTair <= design.comfort().max();

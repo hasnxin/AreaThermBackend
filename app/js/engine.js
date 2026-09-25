@@ -77,6 +77,22 @@ window.APP_ENGINE = (function () {
     return orientationFactorFromAngle(angle, latitude);
   }
 
+  // Incident Angle Modifier (ASHRAE / Duffie-Beckman standard, b0 = 0.08)
+  // Modulates glazing solar transmission to account for glancing reflection at non-normal incidence.
+  function incidentAngleModifier(hourDecimal, faceOffsetDeg, latitude) {
+    const hr = ((hourDecimal % 24) + 24) % 24;
+    if (hr < 5 || hr > 19) return 0.92;
+    const omega = ((hr - 12) * 15 * Math.PI) / 180;
+    const lat = ((latitude || 34.15) * Math.PI) / 180;
+    const dec = (-10.0 * Math.PI) / 180;
+    const sinAlt = Math.max(0, Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(omega));
+    const cosAlt = Math.sqrt(Math.max(0, 1 - sinAlt * sinAlt));
+    const offRad = ((faceOffsetDeg || 0) * Math.PI) / 180;
+    const cosInc = Math.max(0.1, cosAlt * Math.cos(omega - offRad));
+    const iam = 1.0 - 0.08 * (1.0 / cosInc - 1.0);
+    return Math.max(0.60, Math.min(1.0, iam));
+  }
+
   // ---- Input validation ---------------------------------------------------
   // Runs before a design ever reaches the RC solver. Catches the inputs that
   // would otherwise propagate a NaN or a divide-by-zero into a blank chart
@@ -480,7 +496,7 @@ window.APP_ENGINE = (function () {
       // series exists) feeding the ASHRAE wind-adjusted film coefficient —
       // see windAdjustedFilmCoefficient above for why this is kept separate
       // from the static H_O used in wallUValue/roofUValue.
-      const hOuterNow = windAdjustedFilmCoefficient(windSpeedAt(season, hourDecimal));
+      const hOuterNow = Math.max(1.0, windAdjustedFilmCoefficient(windSpeedAt(season, hourDecimal)));
 
       // Sol-air temps per face (opaque) — wallMat/roofMat hoisted above the
       // loop. Uses each face's SOLID area (solidFaceAreas), not its full
@@ -494,7 +510,9 @@ window.APP_ENGINE = (function () {
         wallUA += uWall * solidArea;
         wallRefSum += uWall * solidArea * tSolAir;
       });
-      const tSolAirRoof = tAmb + (roofMat.absorptivity * gHoriz) / hOuterNow;
+      const roofEmissivity = roofMat.emissivity ?? 0.9;
+      // ASHRAE longwave sky radiation depression on horizontal roof: ΔR_sky ≈ 60 W/m²
+      const tSolAirRoof = tAmb + (roofMat.absorptivity * gHoriz - roofEmissivity * 60.0) / hOuterNow;
       const roofUA = uRoof * geom.roofArea, roofRef = roofUA * tSolAirRoof;
       const floorUA = uFloor * geom.floorArea, floorRef = floorUA * tGround;
 
@@ -502,7 +520,8 @@ window.APP_ENGINE = (function () {
       windowGroups.forEach(w => {
         const off = { FRONT: 0, BACK: 180, LEFT: -90, RIGHT: 90, PRIMARY: 0 }[w.orientation] ?? 0;
         const f = faceFactor(geom.frontAzimuth, off, season.latitude);
-        qSolarWindow += w.totalArea * gHoriz * f * w.shgc;
+        const iam = incidentAngleModifier(hourDecimal, off, season.latitude);
+        qSolarWindow += w.totalArea * gHoriz * f * w.shgc * iam;
         windowCondUA += w.uValue * w.totalArea;
       });
       const windowCondRef = windowCondUA * tAmb;
@@ -517,7 +536,7 @@ window.APP_ENGINE = (function () {
       const totalUA = wallUA + roofUA + floorUA + windowCondUA + doorUA + ventUA + massUA;
       const totalRef = wallRefSum + roofRef + floorRef + windowCondRef + doorRef + ventRef + massRef + qSolarWindow + qInternal;
       const cDt = cAir / dtSec;
-      const nextTair = (cDt * tAir + totalRef) / (cDt + totalUA);
+      const nextTair = (cDt + totalUA) > 1e-6 ? (cDt * tAir + totalRef) / (cDt + totalUA) : tAir;
 
       const qWall = wallUA * nextTair - wallRefSum;
       const qRoof = roofUA * nextTair - roofRef;
@@ -536,7 +555,7 @@ window.APP_ENGINE = (function () {
           effectiveCMass = cMass + (tm.massKg * massMat.pcmLatentJKg) / 3; // apparent-Cp approximation over ~3K band
         }
         const cMassDt = effectiveCMass / dtSec;
-        nextTmass = (cMassDt * tMass + massUA * nextTair + solarToMass) / (cMassDt + massUA);
+        nextTmass = (cMassDt + massUA) > 1e-6 ? (cMassDt * tMass + massUA * nextTair + solarToMass) / (cMassDt + massUA) : tMass;
       }
 
       const inComfort = nextTair >= design.comfort.min && nextTair <= design.comfort.max;
@@ -1279,6 +1298,6 @@ window.APP_ENGINE = (function () {
     generateCandidates, scoreCandidate, runOptimization, sensitivityAnalysis, recommendWindowLayout,
     validationStats, validateDesign, validateCoordinates,
     orientationFactorFromAngle, faceFactor, frontAzimuthOf, orientationFactorTableForLatitude,
-    runAnnualSimulation
+    incidentAngleModifier, runAnnualSimulation
   };
 })();

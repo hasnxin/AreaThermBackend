@@ -29,4 +29,8 @@ public record MaterialProperties(
     public double absorptivityOrDefault(double fallback) {
         return absorptivity != null ? absorptivity : fallback;
     }
+
+    public double emissivityOrDefault(double fallback) {
+        return emissivity != null ? emissivity : fallback;
+    }
 }

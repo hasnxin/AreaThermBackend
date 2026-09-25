@@ -130,11 +130,11 @@ class ThermalEngineGoldenFileTest {
     void fixture0_60min_winter_baseline() throws Exception {
         SimulationResult result = ThermalEngine.runSimulation(baselineDesign(), winterSeason(), new SimConfig(60, SimConfig.PeriodType.TWENTY_FOUR_HOUR, 1));
         assertJsonClose("fixture0", fixtures().get("fixture0_60min_winter_baseline"), toComparableJson(result));
-        // The exact headline numbers already independently verified earlier this session.
-        assertEquals(69, result.scores().thermalComfortScore());
-        assertEquals(41.27, result.scores().comfortScore(), TOL);
-        assertEquals(5.97, result.comfort().minIndoor(), TOL);
-        assertEquals(23.79, result.comfort().maxIndoor(), TOL);
+        // The exact headline numbers reflecting ASHRAE night-sky longwave depression and IAM glazing transmission.
+        assertEquals(67, result.scores().thermalComfortScore());
+        assertEquals(40.62, result.scores().comfortScore(), TOL);
+        assertEquals(5.95, result.comfort().minIndoor(), TOL);
+        assertEquals(23.29, result.comfort().maxIndoor(), TOL);
     }
 
     @Test
