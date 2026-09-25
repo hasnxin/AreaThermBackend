@@ -6,6 +6,12 @@
       "runtimeExecutable": "py",
       "runtimeArgs": ["-m", "http.server", "8743", "--directory", "app"],
       "port": 8743
+    },
+    {
+      "name": "areatherm-backend",
+      "runtimeExecutable": "cmd.exe",
+      "runtimeArgs": ["/c", "cd /d C:\\AreaTherm\\backend && C:\\AreaTherm\\backend\\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local"],
+      "port": 8080
     }
   ]
 }

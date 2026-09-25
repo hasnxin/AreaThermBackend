@@ -92,6 +92,15 @@ public class ApiExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
+    // A service-layer business-rule violation on an otherwise-valid request
+    // (e.g. DesignExplanationService.findOrCreateQueued rejecting a
+    // simulation that hasn't reached COMPLETE yet) -- distinct from
+    // IllegalArgumentException above, which is a bad/unknown reference.
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiErrorResponse> handleIllegalState(IllegalStateException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
     /**
      * Spring MVC 6.1+ throws this (instead of a plain 404) when no
      * controller mapping -- and no static resource either -- matches the

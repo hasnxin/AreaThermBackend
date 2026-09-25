@@ -178,6 +178,14 @@ window.APP_BACKEND = (function () {
   function getOptimizationRun(id) { return get("/optimization-runs/" + id); }
   function pollOptimizationRun(id, opts) { return pollUntilTerminal(() => getOptimizationRun(id), opts); }
 
+  // ---- Design Explanation (optional, opt-in local-LLM narration of a
+  // COMPLETE simulation's result -- see backend's DesignExplanationService/
+  // CitationRegistry for how the prompt is grounded and citations checked) --
+  function explainAvailability(simulationId) { return get("/simulations/" + simulationId + "/explain/availability"); }
+  function createExplanation(simulationId) { return post("/simulations/" + simulationId + "/explain"); }
+  function getExplanation(simulationId) { return get("/simulations/" + simulationId + "/explain"); }
+  function pollExplanation(simulationId, opts) { return pollUntilTerminal(() => getExplanation(simulationId), opts); }
+
   // ---- Reports -----------------------------------------------------------
   function createReport(payload) { return post("/reports", payload); }
   function getReport(id) { return get("/reports/" + id); }
@@ -211,6 +219,7 @@ window.APP_BACKEND = (function () {
     createOptimizationRun, getOptimizationRun, pollOptimizationRun,
     createReport, getReport, downloadReportFile,
     era5Availability, createEra5Fetch, getEra5Fetch, pollEra5Fetch,
+    explainAvailability, createExplanation, getExplanation, pollExplanation,
     pollUntilTerminal
   };
 })();

@@ -85,3 +85,19 @@ areatherm:
     # sitting at "accepted" after 10+ minutes during testing, not a guess.
     # 30 minutes gives real queue delays room without polling forever.
     poll-timeout-ms: 1800000
+  ollama:
+    # Optional, opt-in (frontend toggle default OFF): AI-generated natural-
+    # language explanation of a completed simulation, via a LOCAL Ollama
+    # model -- never a hosted/cloud LLM, and never anything that feeds back
+    # into the physics engine. Left at defaults, this just points at a
+    # locally-installed Ollama server; if it isn't running (or the model
+    # hasn't finished pulling), DesignExplanationController reports the
+    # feature as unavailable and every other feature works normally. See
+    # OllamaProperties / DesignExplanationService / CitationRegistry.
+    base-url: http://localhost:11434
+    model: qwen2.5:7b-instruct
+    # CPU-only inference for a few paragraphs on a 7B model can genuinely
+    # take 1-3 minutes on a laptop with no dedicated GPU -- a real observed
+    # figure from testing on this machine, not an arbitrary guess.
+    timeout-ms: 180000
+    availability-check-timeout-ms: 3000

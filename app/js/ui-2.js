@@ -9,6 +9,83 @@ window.UI = window.UI || {};
   // survives re-renders of the Simulation screen but resets on reload.
   let lastAnnualResult = null;
 
+  // AI Design Explanation — same "local UI state, resets on reload" bucket
+  // as era5/lastAnnualResult above. Requires an official (backend-recorded)
+  // simulation, since the explanation is generated server-side from that
+  // simulation's own persisted summary — see backend's
+  // DesignExplanationService for how the prompt is grounded and citations
+  // checked. Deliberately never auto-fetches a prior explanation on mount
+  // (same simplicity level as era5's own card) — only ever runs on an
+  // explicit click.
+  let explainState = { checkedAvailability: false, available: false, status: "idle", data: null, error: null };
+
+  const EXPLAIN_CITATION_LABELS = {
+    ASHRAE_55: "ASHRAE 55", ASHRAE_FUND_CH9: "ASHRAE Fundamentals Ch. 9",
+    ISO_8996: "ISO 8996", PHI: "Passive House Institute"
+  };
+
+  function designExplanationCardHtml(state) {
+    return `
+    <div class="card" style="margin-top:16px;">
+      <h3>AI Design Explanation <span class="tag tag-ml">ML-based estimation</span></h3>
+      <p class="hint">Optional, local-only narration of the numbers above from a small language model running
+      entirely on this machine — never a hosted/cloud service, and it never feeds back into the physics engine or
+      any calculation.</p>
+      ${!state.checkedAvailability ? `<p class="hint">Checking availability…</p>` : !state.available ? `
+      <p class="hint">Not available on this server — no local Ollama model is running or fully downloaded yet. Every other feature is unaffected.</p>
+      ` : `
+      <button class="btn btn-sm" id="explainDesignBtn" ${state.status === "fetching" ? "disabled" : ""}>${
+        state.status === "fetching" ? "Generating (can take 1–3 min on CPU)…" : state.data ? "Regenerate" : "Explain this design"
+      }</button>
+      ${state.data ? explanationResultHtml(state.data) : ""}
+      ${state.status === "error" ? `<p class="hint status-error" style="margin-top:8px;">${U.esc(state.error)}</p>` : ""}
+      `}
+    </div>`;
+  }
+
+  // explanationText is rendered via .textContent below (never .innerHTML) —
+  // it's LLM-generated text, not this app's own trusted template markup,
+  // so it must never be interpreted as HTML.
+  function explanationResultHtml(data) {
+    return `
+      <div class="card" style="margin-top:10px; background:var(--bg);">
+        <div id="explainTextBody" style="white-space:pre-wrap;"></div>
+        ${data.citationsUsed && data.citationsUsed.length ? `<p class="hint" style="margin-top:8px;">Cited: ${data.citationsUsed.map(c => U.esc(EXPLAIN_CITATION_LABELS[c] || c)).join(", ")}</p>` : ""}
+        ${data.citationHygieneOk === false ? `<p class="hint status-error" style="margin-top:6px;">⚠ This output mentioned a reference outside the approved citation list — verify independently before relying on it.</p>` : ""}
+        <p class="hint" style="margin-top:8px;">AI-generated narration (${U.esc(data.modelName || "local model")}), grounded only in the numbers above — not an independent calculation. Always verify against the cited standards.</p>
+      </div>`;
+  }
+
+  function wireDesignExplanationCard(box, simulationId) {
+    function rerender() {
+      box.innerHTML = designExplanationCardHtml(explainState);
+      const textBody = U.qs("#explainTextBody", box);
+      if (textBody && explainState.data) textBody.textContent = explainState.data.explanationText || "";
+      U.on("#explainDesignBtn", "click", async () => {
+        explainState.status = "fetching"; explainState.error = null;
+        rerender();
+        try {
+          await window.APP_BACKEND.createExplanation(simulationId);
+          const final = await window.APP_BACKEND.pollExplanation(simulationId, { intervalMs: 4000, timeoutMs: 240000 });
+          if (final.status !== "COMPLETE") throw new Error(final.errorMessage || "Explanation generation failed on the server.");
+          explainState.data = final;
+          explainState.status = "ready";
+        } catch (e) {
+          explainState.status = "error";
+          explainState.error = "Could not generate an explanation: " + e.message;
+        }
+        rerender();
+      }, box);
+    }
+    if (!explainState.checkedAvailability) {
+      window.APP_BACKEND.explainAvailability(simulationId)
+        .then(res => { explainState.available = !!res.available; })
+        .catch(() => { explainState.available = false; })
+        .finally(() => { explainState.checkedAvailability = true; rerender(); });
+    }
+    rerender();
+  }
+
   function matName(id) { const m = DATA.materialById(id); return m ? m.name : id || "—"; }
 
   function noClimateCard() {
@@ -328,6 +405,7 @@ Thermal Comfort Score = ${sc.thermalComfortScore} / 100</pre>
         </div>
         <p class="hint" style="margin-top:10px;"><b>Recommendation:</b> ${simRecommendation(result, s.design)}</p>
       </div>
+      ${s.backend && s.backend.lastSimulationId ? `<div id="explainDesignBox"></div>` : ""}
       ` : `<div class="card"><p class="subtitle">Run the simulation to see predicted indoor temperature, solar gain, heat losses, and comfort duration.</p></div>`}
 
       <div class="section-label" style="margin-top:8px;">Annual / Seasonal Energy Balance</div>
@@ -374,6 +452,8 @@ Thermal Comfort Score = ${sc.thermalComfortScore} / 100</pre>
       // purely so the modal's narration has the richer detail to read.
       wireExplainButtons(root, window.APP_ADAPTER.explainLocalRecompute(s) || result, s.design, season);
       U.on("#downloadTempChartBtn", "click", () => CH.downloadChartPng(U.qs("#tempChart", root), "areatherm_temperature_chart.png"), root);
+      const explainBox = U.qs("#explainDesignBox", root);
+      if (explainBox) wireDesignExplanationCard(explainBox, s.backend.lastSimulationId);
     }
 
     if (lastAnnualResult) {
