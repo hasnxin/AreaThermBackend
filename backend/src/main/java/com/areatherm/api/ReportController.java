@@ -39,11 +39,13 @@ public class ReportController {
     public Map<String, Object> get(@PathVariable Long id) {
         Report report = reportService.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No report with id " + id));
-        return Map.of(
-            "id", report.getId(), "title", report.getTitle(), "modelVersion", report.getModelVersion(),
-            "generatedAt", report.getGeneratedAt().toString(),
-            "fileUrl", report.getFilePath() != null ? "/api/v1/reports/" + report.getId() + "/file" : null
-        );
+        Map<String, Object> resp = new java.util.LinkedHashMap<>();
+        resp.put("id", report.getId());
+        resp.put("title", report.getTitle() != null ? report.getTitle() : "Report #" + id);
+        resp.put("modelVersion", report.getModelVersion() != null ? report.getModelVersion() : "v1.0");
+        resp.put("generatedAt", report.getGeneratedAt() != null ? report.getGeneratedAt().toString() : "");
+        resp.put("fileUrl", report.getFilePath() != null ? "/api/v1/reports/" + report.getId() + "/file" : null);
+        return resp;
     }
 
     @GetMapping(value = "/{id}/file", produces = "application/pdf")

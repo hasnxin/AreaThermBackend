@@ -60,6 +60,7 @@ areatherm:
     # standalone frontend's dev-server origin today.
     allowed-origins:
       - http://localhost:8743
+      - http://127.0.0.1:8743
   async:
     core-pool-size: 4
     max-pool-size: 8

@@ -81,14 +81,20 @@ public class SimulationService {
         ClimateProfile climateProfile = climateProfileRepository.findById(climateProfileId)
             .orElseThrow(() -> new IllegalArgumentException("Unknown climate profile: " + climateProfileId));
 
+        LocalDateTime actualStart = startAt != null ? startAt : LocalDateTime.now();
+        LocalDateTime actualEnd = endAt != null ? endAt : actualStart.plusDays(1);
+        if (actualStart.isAfter(actualEnd)) {
+            throw new IllegalArgumentException("startAt (" + actualStart + ") must be before endAt (" + actualEnd + ")");
+        }
+
         Simulation sim = new Simulation();
         sim.setProject(project);
         sim.setShelterDesign(shelterDesign);
         sim.setClimateProfile(climateProfile);
-        sim.setTimeStepMinutes(timeStepMinutes);
-        sim.setPeriodType(periodType);
-        sim.setStartAt(startAt);
-        sim.setEndAt(endAt);
+        sim.setTimeStepMinutes(timeStepMinutes > 0 ? timeStepMinutes : 60);
+        sim.setPeriodType(periodType != null ? periodType : SimConfig.PeriodType.TWENTY_FOUR_HOUR);
+        sim.setStartAt(actualStart);
+        sim.setEndAt(actualEnd);
         sim.setStatus(Simulation.Status.QUEUED);
         if (runByUserId != null) {
             AppUser runBy = appUserRepository.findById(runByUserId).orElse(null);
@@ -124,8 +130,13 @@ public class SimulationService {
         try {
             Design design = shelterDesignService.toDesign(sim.getShelterDesign());
             Season season = climateProfileService.toSeason(sim.getClimateProfile());
-            int days = Math.max(1, (int) Math.ceil(Duration.between(sim.getStartAt(), sim.getEndAt()).toHours() / 24.0));
-            SimConfig simConfig = new SimConfig(sim.getTimeStepMinutes(), sim.getPeriodType(), days);
+            LocalDateTime start = sim.getStartAt() != null ? sim.getStartAt() : LocalDateTime.now();
+            LocalDateTime end = sim.getEndAt() != null ? sim.getEndAt() : start.plusDays(1);
+            if (end.isBefore(start)) {
+                end = start.plusDays(1);
+            }
+            int days = Math.max(1, (int) Math.ceil(Duration.between(start, end).toHours() / 24.0));
+            SimConfig simConfig = new SimConfig(sim.getTimeStepMinutes() > 0 ? sim.getTimeStepMinutes() : 60, sim.getPeriodType(), days);
 
             SimulationResult result = ThermalEngine.runSimulation(design, season, simConfig);
 

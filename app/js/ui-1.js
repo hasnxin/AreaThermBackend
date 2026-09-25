@@ -1722,6 +1722,7 @@ window.UI = window.UI || {};
     const baseMin = c.baseMin != null ? c.baseMin : c.min;
     const clothingId = c.clothingLevel || "TYPICAL";
     const activityId = c.activityLevel || "SEATED";
+    const initialEffectiveMin = DATA.effectiveComfortMin(baseMin, clothingId, activityId, c.max);
     root.innerHTML = `
       ${U.pageHeader("🧭", "Guided Setup", "Step 4 of 5 — Comfort")}
       ${guidedStepBar(4)}
@@ -1729,28 +1730,115 @@ window.UI = window.UI || {};
         <h3>Step 4 — Set Comfort Range &amp; Occupancy</h3>
         <p class="subtitle">This prototype models thermal comfort for human occupants only.</p>
         <div class="form-inline">
-          <div class="form-row"><label>Min comfortable temp (°C)</label><input id="gMin" type="number" value="${baseMin}"></div>
+          <div class="form-row"><label>Base min comfortable temp (°C)</label><input id="gMin" type="number" value="${baseMin}"></div>
           <div class="form-row"><label>Max comfortable temp (°C)</label><input id="gMax" type="number" value="${c.max}"></div>
         </div>
         <div class="form-inline">
           <div class="form-row"><label>Clothing level</label>
-            <select id="gClothing">${DATA.CLOTHING_LEVELS.map(cl => `<option value="${cl.id}" ${clothingId === cl.id ? "selected" : ""}>${cl.label} (${cl.clo} clo)</option>`).join("")}</select>
+            <select id="gClothing">${DATA.CLOTHING_LEVELS.map(cl => `<option value="${cl.id}" ${clothingId === cl.id ? "selected" : ""}>${cl.label} (${cl.clo} clo${cl.minShiftC !== 0 ? `, ${cl.minShiftC > 0 ? '+' : ''}${cl.minShiftC}°C` : ''})</option>`).join("")}</select>
           </div>
           <div class="form-row"><label>Activity level (comfort)</label>
-            <select id="gComfortActivity">${DATA.COMFORT_ACTIVITY_LEVELS.map(a => `<option value="${a.id}" ${activityId === a.id ? "selected" : ""}>${a.label} (${a.met} met)</option>`).join("")}</select>
+            <select id="gComfortActivity">${DATA.COMFORT_ACTIVITY_LEVELS.map(a => `<option value="${a.id}" ${activityId === a.id ? "selected" : ""}>${a.label} (${a.met} met${a.minShiftC !== 0 ? `, ${a.minShiftC > 0 ? '+' : ''}${a.minShiftC}°C` : ''})</option>`).join("")}</select>
           </div>
         </div>
-        <p class="hint">Clothing and activity shift the minimum comfortable temperature — heavier clothing or more activity means occupants stay comfortable at a lower indoor temperature.</p>
-        <h3 style="margin-top:14px;">Occupancy</h3>
+        <div style="margin-top:12px; padding:12px 14px; background:var(--surface-elevated); border:1px solid var(--border); border-radius:var(--radius-card); display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap;">
+          <div>
+            <div style="font-size:10.5px; text-transform:uppercase; letter-spacing:var(--tracking-wide); color:var(--text-muted); font-weight:700;">Effective Target Comfort Band</div>
+            <div id="gEffectiveBand" style="font-size:18px; font-weight:700; color:var(--accent); font-family:var(--mono); margin-top:2px;">${initialEffectiveMin} – ${c.max} °C</div>
+          </div>
+          <div id="gEffectiveNote" class="hint" style="margin:0; font-size:12px; max-width:340px; text-align:right;">
+            ${initialEffectiveMin !== baseMin ? `Base ${baseMin}°C ${initialEffectiveMin - baseMin > 0 ? '+' : ''}${initialEffectiveMin - baseMin}°C clothing shift = ${initialEffectiveMin}°C effective minimum target (ASHRAE 55).` : `Base ${baseMin}°C matches target (no clothing shift).`}
+          </div>
+        </div>
+        <p class="hint" style="margin-top:10px;">Clothing and activity shift the minimum comfortable temperature — heavier clothing (1.5 clo = −3°C shift) means occupants stay comfortable at a lower indoor temperature.</p>
+        <h3 style="margin-top:14px;">Occupancy &amp; Troop Heat Generation</h3>
+        <p class="hint">Activity-based metabolic heat generation (ISO 8996) adds sensible heat directly into the shelter air, with coupled fresh-air ventilation.</p>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">
+          <span style="font-size:11px; text-transform:uppercase; letter-spacing:var(--tracking-wide); color:var(--text-muted); font-weight:700; align-self:center; margin-right:4px;">Squad Presets:</span>
+          <button type="button" class="btn btn-sm btn-subtle gSquadBtn" data-count="0" data-act="SEATED" style="font-size:11px; padding:3px 8px;">Unoccupied</button>
+          <button type="button" class="btn btn-sm btn-subtle gSquadBtn" data-count="4" data-act="SEATED" style="font-size:11px; padding:3px 8px;">4-Soldier Patrol</button>
+          <button type="button" class="btn btn-sm btn-subtle gSquadBtn" data-count="8" data-act="SLEEPING" style="font-size:11px; padding:3px 8px;">8-Soldier Squad</button>
+          <button type="button" class="btn btn-sm btn-subtle gSquadBtn" data-count="12" data-act="SLEEPING" style="font-size:11px; padding:3px 8px;">12-Soldier Platoon</button>
+        </div>
         <div class="form-inline">
-          <div class="form-row"><label>Occupancy (persons)</label><input id="gOccupancy" type="number" min="0" max="50" value="${d.occupancy}"></div>
+          <div class="form-row"><label>Occupancy (soldiers / persons)</label><input id="gOccupancy" type="number" min="0" max="50" value="${d.occupancy}"></div>
           <div class="form-row"><label>Activity level (heat output)</label>
             <select id="gActivity">${DATA.ACTIVITY_LEVELS.map(a => `<option value="${a.id}" ${(d.occupancyActivity||"SEATED")===a.id?"selected":""}>${a.label} (${a.watts} W/person)</option>`).join("")}</select>
+          </div>
+        </div>
+        <div style="margin-top:12px; padding:12px 14px; background:var(--surface-elevated); border:1px solid var(--border); border-radius:var(--radius-card);">
+          <div style="font-size:10.5px; text-transform:uppercase; letter-spacing:var(--tracking-wide); color:var(--text-muted); font-weight:700;">Metabolic Heat Output &amp; Fresh-Air Coupling (ISO 8996 / ASHRAE 62.1)</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; margin-top:4px;">
+            <div>
+              <span id="gTotalHeatWatts" style="font-size:18px; font-weight:700; color:var(--accent); font-family:var(--mono);">+0 W</span>
+              <span style="font-size:12px; color:var(--text-muted); margin-left:4px;">total body heat</span>
+            </div>
+            <div id="gHeatSplitNote" class="hint" style="margin:0; font-size:12px; text-align:right;">
+              Direct air heating: <b>+0 W</b> sensible heat · Coupled fresh air: <b>+0.00 ACH</b>
+            </div>
           </div>
         </div>
         <p class="hint status-error" id="gComfortError" style="margin-top:8px;" hidden></p>
       </div>
       ${guidedNav(root, true, "Continue to Run →")}`;
+
+    function updateLiveEffectiveBand() {
+      const minVal = parseFloat(U.qs("#gMin", root)?.value) || baseMin;
+      const maxVal = parseFloat(U.qs("#gMax", root)?.value) || c.max;
+      const clo = U.qs("#gClothing", root)?.value || clothingId;
+      const act = U.qs("#gComfortActivity", root)?.value || activityId;
+      const effMin = DATA.effectiveComfortMin(minVal, clo, act, maxVal);
+      const bandEl = U.qs("#gEffectiveBand", root);
+      const noteEl = U.qs("#gEffectiveNote", root);
+      if (bandEl) bandEl.textContent = `${effMin} – ${maxVal} °C`;
+      if (noteEl) {
+        const delta = effMin - minVal;
+        const cloObj = DATA.CLOTHING_LEVELS.find(x => x.id === clo);
+        noteEl.textContent = delta !== 0
+          ? `Base ${minVal}°C ${delta > 0 ? '+' : ''}${delta}°C shift (${cloObj ? cloObj.label : clo}) = ${effMin}°C effective target.`
+          : `Base ${minVal}°C matches target (no clothing shift).`;
+      }
+    }
+    function updateLiveOccupancyHeat() {
+      const count = parseInt(U.qs("#gOccupancy", root)?.value) || 0;
+      const actId = U.qs("#gActivity", root)?.value || "SEATED";
+      const actObj = DATA.activityLevelById(actId);
+      const geom = ENGINE.computeGeometry(d);
+      const totalW = count * actObj.watts;
+      const sensibleW = totalW * actObj.sensibleFrac;
+      const latentW = totalW - sensibleW;
+      const latentKg = (latentW * 3600) / CFG.PHYSICS.WATER_LATENT_HEAT_J_KG;
+      const achInc = ENGINE.occupancyAchIncrement(count, geom.volume);
+
+      const totalEl = U.qs("#gTotalHeatWatts", root);
+      const noteEl = U.qs("#gHeatSplitNote", root);
+      if (totalEl) totalEl.textContent = count > 0 ? `+${Math.round(totalW)} W` : "0 W";
+      if (noteEl) {
+        noteEl.innerHTML = count > 0
+          ? `Direct air warming: <b>+${Math.round(sensibleW)} W</b> (${Math.round(actObj.sensibleFrac * 100)}% sensible) · Latent moisture: <b>${Math.round(latentW)} W</b> (${latentKg.toFixed(2)} kg/h) · Coupled fresh air: <b>+${achInc.toFixed(2)} ACH</b>`
+          : `No troop heat generated · Ventilation is infiltration-only.`;
+      }
+    }
+
+    updateLiveOccupancyHeat();
+    U.on("#gMin", "input", updateLiveEffectiveBand, root);
+    U.on("#gMax", "input", updateLiveEffectiveBand, root);
+    U.on("#gClothing", "change", updateLiveEffectiveBand, root);
+    U.on("#gComfortActivity", "change", updateLiveEffectiveBand, root);
+    U.on("#gOccupancy", "input", updateLiveOccupancyHeat, root);
+    U.on("#gActivity", "change", updateLiveOccupancyHeat, root);
+
+    root.querySelectorAll(".gSquadBtn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const count = btn.getAttribute("data-count");
+        const act = btn.getAttribute("data-act");
+        const occInput = U.qs("#gOccupancy", root);
+        const actSelect = U.qs("#gActivity", root);
+        if (occInput) occInput.value = count;
+        if (actSelect) actSelect.value = act;
+        updateLiveOccupancyHeat();
+      });
+    });
 
     wireGuidedNav(root, () => {
       const baseMinVal = parseFloat(U.qs("#gMin", root).value);
@@ -1779,10 +1867,19 @@ window.UI = window.UI || {};
       ${guidedStepBar(5)}
       <div class="card">
         <h3>Step 5 — Review &amp; Run</h3>
-        <div class="grid grid-3">
+        <div class="grid grid-4">
           <div class="metric-card"><div class="metric-label">Location</div><div class="metric-value" style="font-size:15px;">${s.location ? U.esc(s.location.label) : "—"}</div></div>
           <div class="metric-card"><div class="metric-label">Shelter</div><div class="metric-value" style="font-size:15px;">${U.shapeDimensionsText(d)}, ${d.orientation}</div></div>
-          <div class="metric-card"><div class="metric-label">Comfort Range</div><div class="metric-value" style="font-size:15px;">${d.comfort.min}–${d.comfort.max}°C</div></div>
+          <div class="metric-card">
+            <div class="metric-label">Comfort Range</div>
+            <div class="metric-value" style="font-size:15px;">${d.comfort.min}–${d.comfort.max}°C</div>
+            <div class="metric-sub">${d.comfort.baseMin != null && d.comfort.baseMin !== d.comfort.min ? `Base: ${d.comfort.baseMin}°C (${d.comfort.min - d.comfort.baseMin >= 0 ? '+' : ''}${d.comfort.min - d.comfort.baseMin}°C shift)` : 'Target Band'}</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Troop Occupancy</div>
+            <div class="metric-value" style="font-size:15px;">${d.occupancy || 0} soldiers</div>
+            <div class="metric-sub">${d.occupancy > 0 ? `${DATA.activityLevelById(d.occupancyActivity).label} (+${Math.round((d.occupancy || 0) * DATA.activityLevelById(d.occupancyActivity).watts * DATA.activityLevelById(d.occupancyActivity).sensibleFrac)} W sensible)` : 'Unoccupied'}</div>
+          </div>
         </div>
         <div style="margin-top:8px;">${U.badge(s.climateSource)}</div>
         <button class="btn btn-accent" id="gRunBtn" style="margin-top:16px;font-size:14px;padding:12px 24px;" ${season ? "" : "disabled"}>▶ Run Simulation</button>

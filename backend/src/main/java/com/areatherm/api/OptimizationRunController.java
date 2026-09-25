@@ -66,16 +66,19 @@ public class OptimizationRunController {
             .filter(c -> c.label() != null && c.label().length() == 1 && Character.isUpperCase(c.label().charAt(0)))
             .toList();
         DesignCandidateResponse recommended = candidates.stream().filter(DesignCandidateResponse::isRecommended).findFirst().orElse(null);
-        return Map.of(
-            "id", run.getId(), "status", run.getStatus().name(),
-            "candidatesEvaluated", run.getCandidatesEvaluated() != null ? run.getCandidatesEvaluated() : 0,
-            "usedMlScreening", run.isUsedMlScreening(),
-            "top", top, "recommended", recommended != null ? recommended : Map.of(), "all", candidates
-        );
+        Map<String, Object> resp = new java.util.LinkedHashMap<>();
+        resp.put("id", run.getId());
+        resp.put("status", run.getStatus().name());
+        resp.put("candidatesEvaluated", run.getCandidatesEvaluated() != null ? run.getCandidatesEvaluated() : 0);
+        resp.put("usedMlScreening", run.isUsedMlScreening());
+        resp.put("top", top);
+        resp.put("recommended", recommended != null ? recommended : Map.of());
+        resp.put("all", candidates);
+        return resp;
     }
 
     @GetMapping("/{id}/sensitivity")
-    public Map<String, Object> sensitivity() {
+    public Map<String, Object> sensitivity(@PathVariable Long id) {
         // Sensitivity analysis is a synchronous, on-demand computation
         // (OptimizationEngine.sensitivityAnalysis) rather than something
         // persisted per optimization_run -- wiring this to a real base

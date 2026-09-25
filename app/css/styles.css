@@ -268,7 +268,7 @@ p, .hint, .modal-body, .assumption-list li{line-height:var(--line-height);}
 .grid-2{grid-template-columns:repeat(2,minmax(0,1fr));}
 @media (max-width:1024px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-3{grid-template-columns:repeat(2,1fr);}}
 
-.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px 18px; box-shadow:var(--shadow-sm);}
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius-card); padding:16px 18px; box-shadow:var(--shadow-sm); overflow:hidden;}
 .card-tight{padding:12px 14px;}
 /* Self-sufficient even without the .card class alongside it (both patterns
    exist in the markup today) — a KPI tile always gets proper chrome. */
@@ -363,7 +363,7 @@ td.num{font-family:var(--mono); text-align:right; font-variant-numeric:tabular-n
 .table-wrap{overflow-x:auto;}
 
 /* Charts */
-.chart-svg{width:100%; height:auto; display:block;}
+.chart-svg{width:100%; height:auto; display:block; max-width:100%; box-sizing:border-box;}
 .chart-grid{stroke:var(--chart-grid); stroke-width:1;}
 .chart-axis{stroke:var(--chart-axis); stroke-width:1;}
 .chart-tick{font-size:9.5px; fill:var(--text-faint); font-family:var(--mono); font-variant-numeric:tabular-nums;}
@@ -378,7 +378,7 @@ td.num{font-family:var(--mono); text-align:right; font-variant-numeric:tabular-n
 .chart-point{fill:var(--accent); opacity:.75;}
 
 .chart-crosshair{stroke:var(--text-faint); stroke-width:1; stroke-dasharray:3 3;}
-.chart-tooltip{position:absolute; top:14px; background:var(--tooltip-bg); color:#fff; font-size:11px; padding:8px 10px; border-radius:var(--radius-card); pointer-events:none; z-index:5; box-shadow:0 6px 18px rgba(0,0,0,.25); min-width:150px;}
+.chart-tooltip{position:absolute; top:14px; background:var(--tooltip-bg); color:#fff; font-size:11px; padding:8px 10px; border-radius:var(--radius-card); pointer-events:none; z-index:5; box-shadow:0 6px 18px rgba(0,0,0,.25); min-width:140px; max-width:calc(100% - 24px); box-sizing:border-box;}
 .chart-tooltip i{width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:5px;}
 .chart-tooltip b{display:block; margin-bottom:3px;}
 .chart-tooltip div{white-space:nowrap;}

@@ -40,8 +40,9 @@ window.APP_CHARTS = (function () {
   // series: [{name, color, data:[{x,y}]}], options: {width,height,xTicks,yLabel,xLabel,comfortBand:{min,max},tempZones:true}
   function lineChart(container, series, opts) {
     opts = opts || {};
-    const width = opts.width || 640, height = opts.height || 280;
-    const ml = 46, mr = 16, mt = 14, mb = 34;
+    const width = opts.width || 660, height = opts.height || 280;
+    const hasYLabel = !!opts.yLabel;
+    const ml = hasYLabel ? 58 : 48, mr = 28, mt = 14, mb = 40;
     const plotW = width - ml - mr, plotH = height - mt - mb;
     const allX = series.flatMap(s => s.data.map(d => d.x));
     const allY = series.flatMap(s => s.data.map(d => d.y));
@@ -82,7 +83,8 @@ window.APP_CHARTS = (function () {
     for (let i = 0; i <= xTickCount; i++) {
       const xv = xMin + (i / xTickCount) * (xMax - xMin);
       const x = sx(xv);
-      svg.appendChild(textEl(x, height - mb + 16, opts.xFormat ? opts.xFormat(xv) : Math.round(xv), "chart-tick", "middle"));
+      const anchor = i === 0 ? "start" : i === xTickCount ? "end" : "middle";
+      svg.appendChild(textEl(x, height - mb + 18, opts.xFormat ? opts.xFormat(xv) : Math.round(xv), "chart-tick", anchor));
     }
     svg.appendChild(el("line", { x1: ml, y1: mt + plotH, x2: width - mr, y2: mt + plotH, class: "chart-axis" }));
     svg.appendChild(el("line", { x1: ml, y1: mt, x2: ml, y2: mt + plotH, class: "chart-axis" }));
@@ -109,7 +111,7 @@ window.APP_CHARTS = (function () {
       lbl.setAttribute("transform", `rotate(-90 14 ${mt + plotH / 2})`);
       svg.appendChild(lbl);
     }
-    if (opts.xLabel) svg.appendChild(textEl(ml + plotW / 2, height - 4, opts.xLabel, "chart-axis-label", "middle"));
+    if (opts.xLabel) svg.appendChild(textEl(ml + plotW / 2, height - 6, opts.xLabel, "chart-axis-label", "middle"));
 
     container.innerHTML = "";
     container.appendChild(svg);
@@ -155,15 +157,14 @@ window.APP_CHARTS = (function () {
   // collide with — or be painted over by — the category label to its left.
   function barChart(container, items, opts) {
     opts = opts || {};
-    const width = opts.width || 560, barH = 26, gap = 10;
-    const height = items.length * (barH + gap) + 20;
-    // mlGap reserves room, symmetric with mr on the right, for a negative
-    // bar's value text — without it, the max-magnitude negative bar's rect
-    // (and the value text just past its tip) reaches exactly back to the
-    // label column and collides with it.
-    const ml = opts.labelWidth || 170, mr = 60, mlGap = 50;
+    const width = opts.width || 620, barH = 26, gap = 10;
+    const height = items.length * (barH + gap) + 24;
+    // Calculate ml dynamically based on longest label if not explicitly provided
+    const maxLabelLen = Math.max(10, ...items.map(i => (i.label || "").length));
+    const ml = opts.labelWidth || Math.min(200, Math.max(150, maxLabelLen * 6.8 + 16));
+    const mr = 50, mlGap = 40;
     const plotL = ml + mlGap, plotR = width - mr;
-    const plotW = plotR - plotL;
+    const plotW = Math.max(100, plotR - plotL);
     const maxAbs = Math.max(1, ...items.map(i => Math.abs(i.value)));
     const hasNeg = items.some(i => i.value < 0);
     const hasPos = items.some(i => i.value >= 0);
@@ -172,11 +173,37 @@ window.APP_CHARTS = (function () {
     const svg = el("svg", { viewBox: `0 0 ${width} ${height}`, class: "chart-svg" });
     items.forEach((it, i) => {
       const y = 10 + i * (barH + gap);
-      svg.appendChild(textEl(ml - 10, y + barH / 2 + 4, it.label, "chart-tick", "end"));
+      // Truncate label if it would overflow the left edge
+      let labelText = it.label || "";
+      if (labelText.length > 28) {
+        labelText = labelText.substring(0, 26) + "…";
+      }
+      const lblNode = textEl(ml - 8, y + barH / 2 + 4, labelText, "chart-tick", "end");
+      if (it.label && it.label.length > 28) {
+        const titleEl = el("title", {});
+        titleEl.textContent = it.label;
+        lblNode.appendChild(titleEl);
+      }
+      svg.appendChild(lblNode);
+
       const w = (Math.abs(it.value) / maxAbs) * halfW;
       const x = it.value >= 0 ? zeroX : zeroX - w;
       svg.appendChild(el("rect", { x, y, width: Math.max(1, w), height: barH, class: it.value >= 0 ? "chart-bar-pos" : "chart-bar-neg" }));
-      svg.appendChild(textEl(zeroX + (it.value >= 0 ? w + 6 : -w - 6), y + barH / 2 + 4, (it.value >= 0 ? "+" : "") + it.value, "chart-tick", it.value >= 0 ? "start" : "end"));
+
+      const valText = (it.value >= 0 ? "+" : "") + it.value;
+      if (it.value >= 0) {
+        if (zeroX + w + 45 > width) {
+          svg.appendChild(textEl(zeroX + w - 6, y + barH / 2 + 4, valText, "chart-tick", "end"));
+        } else {
+          svg.appendChild(textEl(zeroX + w + 6, y + barH / 2 + 4, valText, "chart-tick", "start"));
+        }
+      } else {
+        if (zeroX - w - 45 < ml) {
+          svg.appendChild(textEl(zeroX - w + 6, y + barH / 2 + 4, valText, "chart-tick", "start"));
+        } else {
+          svg.appendChild(textEl(zeroX - w - 6, y + barH / 2 + 4, valText, "chart-tick", "end"));
+        }
+      }
     });
     if (hasNeg && hasPos) svg.appendChild(el("line", { x1: zeroX, y1: 4, x2: zeroX, y2: height - 4, class: "chart-axis" }));
     container.innerHTML = "";
@@ -185,8 +212,8 @@ window.APP_CHARTS = (function () {
 
   function scatterChart(container, points, opts) {
     opts = opts || {};
-    const width = opts.width || 420, height = opts.height || 320;
-    const ml = 46, mr = 16, mt = 14, mb = 34;
+    const width = opts.width || 440, height = opts.height || 320;
+    const ml = 54, mr = 24, mt = 16, mb = 40;
     const plotW = width - ml - mr, plotH = height - mt - mb;
     const allX = points.map(p => p.x), allY = points.map(p => p.y);
     const lo = Math.min(...allX, ...allY), hi = Math.max(...allX, ...allY);
@@ -198,18 +225,12 @@ window.APP_CHARTS = (function () {
     const p1 = s(mn), p2 = s(mx);
     svg.appendChild(el("line", { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, class: "chart-ideal-line" }));
     points.forEach(p => {
-      const c = s(p.x);
-      svg.appendChild(el("circle", { cx: c.x, cy: mt + plotH - (c.y - mt), r: 4, class: "chart-point" }));
-    });
-    // fix y mapping (SVG y grows downward) — recompute properly
-    container.innerHTML = "";
-    svg.querySelectorAll("circle").forEach((c, idx) => {
-      const p = points[idx];
       const px = ml + ((p.x - mn) / (mx - mn)) * plotW;
       const py = mt + plotH - ((p.y - mn) / (mx - mn)) * plotH;
-      c.setAttribute("cx", px); c.setAttribute("cy", py);
+      svg.appendChild(el("circle", { cx: px, cy: py, r: 4, class: "chart-point" }));
     });
-    svg.appendChild(textEl(ml + plotW / 2, height - 4, opts.xLabel || "Measured (°C)", "chart-axis-label", "middle"));
+    container.innerHTML = "";
+    svg.appendChild(textEl(ml + plotW / 2, height - 6, opts.xLabel || "Measured (°C)", "chart-axis-label", "middle"));
     const lbl = textEl(14, mt + plotH / 2, opts.yLabel || "Predicted (°C)", "chart-axis-label", "middle");
     lbl.setAttribute("transform", `rotate(-90 14 ${mt + plotH / 2})`);
     svg.appendChild(lbl);
@@ -261,7 +282,7 @@ window.APP_CHARTS = (function () {
     if (daily.massExchangeKwh <= 0) gains.push({ label: "Thermal Mass (releasing)", value: -daily.massExchangeKwh });
     else losses.push({ label: "Thermal Mass (charging)", value: daily.massExchangeKwh });
 
-    const width = 660, height = 150, barY = 48, barH = 40, margin = 20;
+    const width = 680, height = 160, barY = 46, barH = 38, margin = 28;
     const cx = width / 2;
     const halfW = width / 2 - margin;
     const totalGains = gains.reduce((s, g) => s + g.value, 0);
@@ -288,11 +309,11 @@ window.APP_CHARTS = (function () {
       running += l.value;
     });
 
-    svg.appendChild(textEl(cx - halfW / 2, barY - 14, "GAINS", "chart-axis-label", "middle"));
-    svg.appendChild(textEl(cx + halfW / 2, barY - 14, "LOSSES", "chart-axis-label", "middle"));
-    svg.appendChild(textEl(cx - halfW / 2, barY + barH + 22, `Total: +${totalGains.toFixed(1)} kWh/day`, "chart-tick", "middle"));
-    svg.appendChild(textEl(cx + halfW / 2, barY + barH + 22, `Total: -${totalLosses.toFixed(1)} kWh/day`, "chart-tick", "middle"));
-    const netEl = textEl(cx, barY + barH + 42, `Net energy balance: ${daily.netKwh >= 0 ? "+" : ""}${daily.netKwh.toFixed(1)} kWh/day`, "chart-axis-label", "middle");
+    svg.appendChild(textEl(cx - halfW / 2, barY - 12, "GAINS", "chart-axis-label", "middle"));
+    svg.appendChild(textEl(cx + halfW / 2, barY - 12, "LOSSES", "chart-axis-label", "middle"));
+    svg.appendChild(textEl(cx - halfW / 2, barY + barH + 20, `Total: +${totalGains.toFixed(1)} kWh/day`, "chart-tick", "middle"));
+    svg.appendChild(textEl(cx + halfW / 2, barY + barH + 20, `Total: -${totalLosses.toFixed(1)} kWh/day`, "chart-tick", "middle"));
+    const netEl = textEl(cx, barY + barH + 38, `Net energy balance: ${daily.netKwh >= 0 ? "+" : ""}${daily.netKwh.toFixed(1)} kWh/day`, "chart-axis-label", "middle");
     netEl.style.fontWeight = "700";
     svg.appendChild(netEl);
 
@@ -319,8 +340,8 @@ window.APP_CHARTS = (function () {
   // value at that hour.
   function hourlyHeatFlowChart(container, series, opts) {
     opts = opts || {};
-    const width = opts.width || 640, height = opts.height || 300;
-    const ml = 50, mr = 16, mt = 14, mb = 34;
+    const width = opts.width || 680, height = opts.height || 300;
+    const ml = opts.yLabel ? 64 : 52, mr = 28, mt = 14, mb = 40;
     const plotW = width - ml - mr, plotH = height - mt - mb;
 
     // Shared 8-color heat-flow-component palette (kept in sync with the
@@ -370,10 +391,22 @@ window.APP_CHARTS = (function () {
     const xTickCount = Math.min(8, rows.length - 1 || 1);
     for (let i = 0; i <= xTickCount; i++) {
       const xv = xMin + (i / xTickCount) * (xMax - xMin);
-      svg.appendChild(textEl(sx(xv), height - mb + 16, Math.round(xv) + "h", "chart-tick", "middle"));
+      const x = sx(xv);
+      const anchor = i === 0 ? "start" : i === xTickCount ? "end" : "middle";
+      svg.appendChild(textEl(x, height - mb + 18, Math.round(xv) + "h", "chart-tick", anchor));
     }
     svg.appendChild(el("line", { x1: ml, y1: sy(0), x2: width - mr, y2: sy(0), class: "chart-axis" }));
     svg.appendChild(el("line", { x1: ml, y1: mt, x2: ml, y2: mt + plotH, class: "chart-axis" }));
+
+    const clipId = "heat-clip-" + Math.random().toString(36).slice(2, 8);
+    const defs = el("defs");
+    const clipPath = el("clipPath", { id: clipId });
+    clipPath.appendChild(el("rect", { x: ml, y: mt, width: plotW, height: plotH }));
+    defs.appendChild(clipPath);
+    svg.appendChild(defs);
+
+    const bandsGroup = el("g", { "clip-path": `url(#${clipId})` });
+    svg.appendChild(bandsGroup);
 
     // Stack helper: draws each series as a filled band on top of the
     // running cumulative total, walking the list in the given direction.
@@ -383,7 +416,7 @@ window.APP_CHARTS = (function () {
         const top = rows.map((r, i) => running[i] + sign * r[s.key]);
         const pathTop = rows.map((r, i) => `${sx(r.hourDecimal)},${sy(top[i])}`);
         const pathBottom = rows.map((r, i) => `${sx(r.hourDecimal)},${sy(running[i])}`).reverse();
-        svg.appendChild(el("polygon", { points: pathTop.concat(pathBottom).join(" "), fill: s.color, opacity: 0.75, stroke: "none" }));
+        bandsGroup.appendChild(el("polygon", { points: pathTop.concat(pathBottom).join(" "), fill: s.color, opacity: 0.75, stroke: "none" }));
         running = top;
       });
     }
@@ -391,14 +424,14 @@ window.APP_CHARTS = (function () {
     stack(LOSS_SERIES, -1);
 
     const netPts = rows.map(r => `${sx(r.hourDecimal)},${sy(r.qNet)}`).join(" ");
-    svg.appendChild(el("polyline", { points: netPts, class: "chart-line", style: "stroke:#212121;stroke-width:2.5" }));
+    bandsGroup.appendChild(el("polyline", { points: netPts, class: "chart-line", style: "stroke:#212121;stroke-width:2.5" }));
 
     if (opts.yLabel) {
       const lbl = textEl(14, mt + plotH / 2, opts.yLabel, "chart-axis-label", "middle");
       lbl.setAttribute("transform", `rotate(-90 14 ${mt + plotH / 2})`);
       svg.appendChild(lbl);
     }
-    if (opts.xLabel) svg.appendChild(textEl(ml + plotW / 2, height - 4, opts.xLabel, "chart-axis-label", "middle"));
+    if (opts.xLabel) svg.appendChild(textEl(ml + plotW / 2, height - 6, opts.xLabel, "chart-axis-label", "middle"));
 
     // Crosshair + tooltip: an invisible full-height hit rect tracks the
     // mouse and snaps to the nearest hour's data row.
@@ -439,7 +472,13 @@ window.APP_CHARTS = (function () {
         GAIN_SERIES.concat(LOSS_SERIES).map(s => `<div><i style="background:${s.color}"></i>${s.label}: ${Math.round(nearest[s.key] * (LOSS_SERIES.includes(s) ? -1 : 1))} W</div>`).join("") +
         `<div><b>Net: ${Math.round(nearest.qNet)} W</b></div>`;
       const leftPct = (sx(nearest.hourDecimal) / width) * 100;
-      tooltip.style.left = Math.min(70, leftPct) + "%";
+      if (leftPct > 52) {
+        tooltip.style.left = "auto";
+        tooltip.style.right = Math.max(2, 100 - leftPct + 3) + "%";
+      } else {
+        tooltip.style.left = Math.max(2, leftPct + 3) + "%";
+        tooltip.style.right = "auto";
+      }
     });
     hit.addEventListener("mouseleave", () => { crosshair.style.display = "none"; tooltip.hidden = true; });
   }
@@ -457,7 +496,7 @@ window.APP_CHARTS = (function () {
   function stackedHourlyChart(container, rows, opts) {
     opts = opts || {};
     const width = opts.width || 720, height = opts.height || 300;
-    const ml = 50, mr = 16, mt = 14, mb = 30;
+    const ml = opts.yLabel ? 64 : 52, mr = 28, mt = 14, mb = 38;
     const plotW = width - ml - mr, plotH = height - mt - mb;
     // Same 8-color family as the hourly-breakdown chart above — see its
     // comment. "mass" (thermal mass exchange) is the one component unique
@@ -472,15 +511,35 @@ window.APP_CHARTS = (function () {
       { key: "vent", name: "Ventilation loss", color: "#2A9DAC" },
       { key: "mass", name: "Thermal mass exchange", color: "#6B8F71" }
     ];
-    const allVals = rows.flatMap(r => seriesDefs.map(s => r[s.key] || 0));
-    const maxAbs = Math.max(50, ...allVals.map(Math.abs));
-    const [yMin, yMax] = [-maxAbs * 1.05, maxAbs * 1.05];
+    // In a stacked chart, scale by the maximum cumulative stacked positive/negative sum
+    let maxPos = 0, maxNeg = 0;
+    rows.forEach(r => {
+      let pos = 0, neg = 0;
+      seriesDefs.forEach(s => {
+        const v = r[s.key] || 0;
+        if (v > 0) pos += v;
+        else if (v < 0) neg += Math.abs(v);
+      });
+      if (pos > maxPos) maxPos = pos;
+      if (neg > maxNeg) maxNeg = neg;
+    });
+    const maxBound = Math.max(50, maxPos, maxNeg);
+    const step = maxBound > 600 ? 100 : 50;
+    const bound = Math.ceil((maxBound * 1.15) / step) * step;
+    const [yMin, yMax] = [-bound, bound];
     const sy = v => mt + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
     const y0 = sy(0);
     const barSlot = plotW / rows.length;
     const barW = barSlot * 0.68;
 
+    const clipId = "stacked-clip-" + Math.random().toString(36).slice(2, 8);
     const svg = el("svg", { viewBox: `0 0 ${width} ${height}`, class: "chart-svg" });
+    const defs = el("defs");
+    const clipPath = el("clipPath", { id: clipId });
+    clipPath.appendChild(el("rect", { x: ml, y: mt, width: plotW, height: plotH }));
+    defs.appendChild(clipPath);
+    svg.appendChild(defs);
+
     const ticks = 4;
     for (let i = 0; i <= ticks; i++) {
       const yv = yMin + (i / ticks) * (yMax - yMin);
@@ -488,7 +547,12 @@ window.APP_CHARTS = (function () {
       svg.appendChild(el("line", { x1: ml, y1: y, x2: width - mr, y2: y, class: "chart-grid" }));
       svg.appendChild(textEl(ml - 8, y + 4, Math.round(yv), "chart-tick", "end"));
     }
+    // Left axis and zero baseline
+    svg.appendChild(el("line", { x1: ml, y1: mt, x2: ml, y2: mt + plotH, class: "chart-axis" }));
     svg.appendChild(el("line", { x1: ml, y1: y0, x2: width - mr, y2: y0, class: "chart-axis" }));
+
+    const barsGroup = el("g", { "clip-path": `url(#${clipId})` });
+    svg.appendChild(barsGroup);
 
     rows.forEach((r, i) => {
       const x = ml + i * barSlot + (barSlot - barW) / 2;
@@ -498,16 +562,18 @@ window.APP_CHARTS = (function () {
         if (Math.abs(v) < 1e-6) return;
         if (v >= 0) {
           const yTop = sy(posOffset + v), yBase = sy(posOffset);
-          svg.appendChild(el("rect", { x, y: yTop, width: barW, height: Math.max(0, yBase - yTop), fill: s.color }));
+          barsGroup.appendChild(el("rect", { x, y: yTop, width: barW, height: Math.max(0, yBase - yTop), fill: s.color }));
           posOffset += v;
         } else {
           const yTop = sy(negOffset), yBase = sy(negOffset + v);
-          svg.appendChild(el("rect", { x, y: yTop, width: barW, height: Math.max(0, yBase - yTop), fill: s.color }));
+          barsGroup.appendChild(el("rect", { x, y: yTop, width: barW, height: Math.max(0, yBase - yTop), fill: s.color }));
           negOffset += v;
         }
       });
       if (i % Math.max(1, Math.round(rows.length / 12)) === 0) {
-        svg.appendChild(textEl(x + barW / 2, height - mb + 16, r.hour + "h", "chart-tick", "middle"));
+        const xPos = x + barW / 2;
+        const anchor = (xPos > width - mr - 15) ? "end" : (xPos < ml + 15) ? "start" : "middle";
+        svg.appendChild(textEl(xPos, height - mb + 18, r.hour + "h", "chart-tick", anchor));
       }
     });
 
@@ -516,6 +582,7 @@ window.APP_CHARTS = (function () {
       lbl.setAttribute("transform", `rotate(-90 14 ${mt + plotH / 2})`);
       svg.appendChild(lbl);
     }
+    if (opts.xLabel) svg.appendChild(textEl(ml + plotW / 2, height - 6, opts.xLabel, "chart-axis-label", "middle"));
 
     container.innerHTML = "";
     container.appendChild(svg);
@@ -536,8 +603,8 @@ window.APP_CHARTS = (function () {
   // months: [{label, mean, min?, max?}]
   function monthlyBarChart(container, months, opts) {
     opts = opts || {};
-    const width = opts.width || 640, height = opts.height || 260;
-    const ml = 46, mr = 16, mt = 14, mb = 30;
+    const width = opts.width || 660, height = opts.height || 260;
+    const ml = opts.yLabel ? 56 : 46, mr = 26, mt = 14, mb = 36;
     const plotW = width - ml - mr, plotH = height - mt - mb;
     const hasRange = months.every(m => m.min != null && m.max != null);
     const allVals = months.flatMap(m => hasRange ? [m.min, m.max] : [m.mean]);
@@ -565,7 +632,7 @@ window.APP_CHARTS = (function () {
         svg.appendChild(el("line", { x1: cx - 4, y1: sy(m.max), x2: cx + 4, y2: sy(m.max), class: "chart-axis" }));
         svg.appendChild(el("line", { x1: cx - 4, y1: sy(m.min), x2: cx + 4, y2: sy(m.min), class: "chart-axis" }));
       }
-      svg.appendChild(textEl(cx, height - mb + 16, m.label, "chart-tick", "middle"));
+      svg.appendChild(textEl(cx, height - mb + 18, m.label, "chart-tick", "middle"));
     });
     svg.appendChild(el("line", { x1: ml, y1: sy(0), x2: width - mr, y2: sy(0), class: "chart-axis" }));
     if (opts.yLabel) {
