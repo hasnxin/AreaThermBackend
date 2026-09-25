@@ -87,10 +87,14 @@ objects. This is what makes them unit-testable, reusable from a batch job,
 and reusable from the ML surrogate trainer. The JS prototype mirrors this:
 `app/js/engine.js` has no DOM code in it at all.
 
-Deployment: each service Dockerized (`Dockerfile` per module in a real
-build), `docker-compose.yml` for app+MySQL+Redis locally, ECS/EKS-compatible
-on AWS. Not implemented in Phase 1 — documented here for when the target
-infra is available.
+Deployment: the backend is Dockerized (`backend/Dockerfile`, multi-stage
+Maven build → JRE runtime, running the full test suite as part of the
+image build) and `backend/docker-compose.yml` brings it up alongside MySQL
+with the `docker` Spring profile (`application-docker.yml`) wiring them
+together. Redis and an ECS/EKS-compatible AWS deployment remain future
+targets, not yet implemented — documented here for when that infra is
+available. The frontend is a static, zero-build site (`app/`) deployable
+to any static host without its own Dockerfile.
 
 ---
 

@@ -23,5 +23,38 @@ services:
       timeout: 5s
       retries: 10
 
+  backend:
+    build:
+      context: .
+    container_name: areatherm-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Matches mysql's own credentials above exactly -- see
+      # application-docker.yml for how these map to the JDBC URL. "mysql" as
+      # the host resolves via Docker Compose's own internal network, not
+      # localhost.
+      AREATHERM_DB_HOST: mysql
+      AREATHERM_DB_PORT: 3306
+      AREATHERM_DB_NAME: areatherm
+      AREATHERM_DB_USER: areatherm
+      AREATHERM_DB_PASSWORD: areatherm
+      # AREATHERM_JWT_SECRET / AREATHERM_MAIL_USERNAME / AREATHERM_MAIL_PASSWORD /
+      # AREATHERM_ERA5_API_KEY are deliberately left unset here, not set to ""
+      # -- application.yml's ${VAR:default} placeholders only fall back to
+      # their safe default when the variable is completely absent, not when
+      # it's present-but-empty, so setting these to "" here would actually
+      # break JWT signing rather than use the dev-only default. Left unset,
+      # behavior matches local dev exactly: JWT uses its documented dev-only
+      # default secret, mail sends fail silently (registration auto-verifies
+      # instead -- see AppUserService.register), ERA5/Ollama report
+      # themselves unavailable. To turn any of these on for real, export
+      # them in your shell before `docker compose up`, or add a `env_file:`
+      # pointing at an untracked .env -- never commit real secrets here.
+    ports:
+      - "8080:8080"
+
 volumes:
   areatherm_mysql_data:
